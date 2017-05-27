@@ -11,7 +11,7 @@ import MapKit
 import CoreData
 import CloudKit
 
-class Crumb : NSObject{
+public class Crumb : NSObject{
     var Path = Array<CLLocation>();
     var Title = String();
     var Description = String();

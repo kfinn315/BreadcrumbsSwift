@@ -34,7 +34,7 @@ class CloudKitManager{
         fetchAllPaths();
     }
     
-    class func SaveCrumb(_ Data: Crumb){
+    class func SavePath(_ Data: Crumb){
     
         let record = CKRecord(recordType: "Paths");
         record["Title"] = Data.Title as CKRecordValue?;
@@ -42,11 +42,16 @@ class CloudKitManager{
         record["Points"] = Data.Path as CKRecordValue?;
         
         sharedInstance.privateDB.save(record, completionHandler:  {(results, error) -> Void in
-            sharedInstance.delegate?.CrumbSaved(results!.recordID)
+            
+            if(error==nil){
+                sharedInstance.delegate?.CrumbSaved(results!.recordID)
+            } else{
+                sharedInstance.delegate?.errorSavingData(error!)
+            }
         })
     }
     
-    class func RemoveAllCrumbs(){
+    class func RemoveAllPaths(){
         var addRecords : [CKRecord]?
         var modRecords : [CKRecord]?
         let container: CKContainer = CKContainer.default()
@@ -68,6 +73,15 @@ class CloudKitManager{
         
         sharedInstance.privateDB.add(operation)
         
+    }
+    
+    class func RemovePath(recordId: CKRecordID){
+        var addRecords : [CKRecord]?
+        var modRecords : [CKRecord]?
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordId])
+        operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in print("")}
+        
+        sharedInstance.privateDB.add(operation)
     }
     
     class func fetchPathsForUser(){
@@ -113,10 +127,10 @@ class CloudKitManager{
         let locationPredicate = NSPredicate(value: true);
         
         let query = CKQuery(recordType: "Paths", predicate: locationPredicate)
-        
+        query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending:true)]
         sharedInstance.privateDB.perform(query, inZoneWith: nil, completionHandler: {(results, error) -> Void in
             if error != nil {
-                sharedInstance.delegate?.errorUpdatingCrumbs(error! as NSError)
+                sharedInstance.delegate?.errorUpdatingCrumbs(error!)
                 print("Cloud Query Error - Fetch Establishments: \(error)")
                 
                 return
@@ -137,5 +151,5 @@ class CloudKitManager{
         })
         
         print("fetchPaths exit")
-    }
-    }
+    }    
+}

@@ -42,12 +42,15 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         
         let crumb = Crumb();
 
+        let dateFormatter = DateFormatter();
+        dateFormatter.dateFormat = "MM/dd/YY hh:mm"
+        crumb.Title = dateFormatter.string(from: Date())+" "+String(path.count)+" PTS"
         crumb.Path = path;
         
-        CloudKitManager.SaveCrumb(crumb);
+        CloudKitManager.SavePath(crumb);
     }
        func CrumbsReset(){
-        CloudKitManager.RemoveAllCrumbs()
+        CloudKitManager.RemoveAllPaths()
     }
     
     
@@ -93,7 +96,11 @@ class CrumbsManager: NSObject, CloudKitDelegate {
     func CrumbsLoaded(_ Crumbs: Array<Crumb>) {
     }
     
-    func errorUpdatingCrumbs(_ Error: NSError) {
+    func errorUpdatingCrumbs(_ Error: Error) {
         delegate?.errorUpdatingCrumbs(Error)
-    }    
+    }
+    
+    func errorSavingData(_ Error: Error) {
+        delegate?.errorSavingData(Error)
+    }
 }

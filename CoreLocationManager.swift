@@ -55,7 +55,10 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
     
     func startLocationUpdates(){
         print("start Location Updates()")
-              
+        
+        if(LocationSettings.backgroundLocationUpdatesOn){
+            CoreLocationManager.LManager.allowsBackgroundLocationUpdates = true;
+        }
         let authStatus = CLLocationManager.authorizationStatus();
         print("CLLocationManager auth status = "+String(describing: authStatus))
         if(authStatus != CLAuthorizationStatus.authorizedAlways && authStatus != CLAuthorizationStatus.authorizedWhenInUse){
@@ -85,12 +88,10 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
 
     
     func stopLocationUpdates(){
-        if(LocationSettings.significantUpdatesOn){
-            CoreLocationManager.LManager.stopMonitoringSignificantLocationChanges();
-        }
-        else{
-            CoreLocationManager.LManager.stopUpdatingLocation()
-        }
+        CoreLocationManager.LManager.allowsBackgroundLocationUpdates = false;
+        CoreLocationManager.LManager.stopMonitoringSignificantLocationChanges();
+        CoreLocationManager.LManager.stopUpdatingLocation()
+        
         print("Stop location updates")
         updating = false;
         delegate?.didStopLocationUpdates();

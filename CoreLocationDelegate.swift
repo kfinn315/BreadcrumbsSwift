@@ -11,7 +11,7 @@ import CloudKit
 
 protocol CoreLocationDelegate: class
 {
-    func errorUpdatingLocations(_ Error: NSError);
+    func errorUpdatingLocations(_ Error: Error);
     
     func didUpdateLocations(manager: CLLocationManager, locations: [CLLocation]);
     

@@ -16,15 +16,14 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-
+        CloudKitManager.sharedInstance.delegate = self;
+        
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         CloudKitManager.GetCrumbPaths();
-        
-        CloudKitManager.sharedInstance.delegate = self;
-        
     }
  
     override func didReceiveMemoryWarning() {
@@ -38,19 +37,48 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
         
         let row = indexPath.row
         
-        let secondViewController = self.storyboard!.instantiateViewController(withIdentifier: "DetailViewController") as! DetailViewController;
-
-//        if(paths.count > row) {
-        let c = paths[row];        
-            secondViewController.crumb = c;
-  //      }
-        self.navigationController!.pushViewController(secondViewController, animated: true)
-            
+        let c = paths[row];
         
+        (self.parent as! ContainerViewController).SetMainCrumb(path: c)
+        (self.parent as! ContainerViewController).closeLeft()
+         //   secondViewController.crumb = c;
+
+//        self.navigationController!.pushViewController(secondViewController, animated: true)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
+    }
+    
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
+        let edit = UITableViewRowAction(style: .normal, title: "Edit") { action, index in
+            print("edit button tapped")
+            //show edit modal
+              
+            
+            let EVC = self.storyboard?.instantiateViewController(withIdentifier: "editVC") as! EditViewController
+            EVC.RecordId = self.paths[index.row].RecordId;
+            self.present(EVC, animated: true, completion: nil)
+        }
+        edit.backgroundColor = UIColor.lightGray
+        
+        let delete = UITableViewRowAction(style: .normal, title: "Delete") { action, index in
+            print("delete button tapped")
+            //show delete confirm
+        }
+        delete.backgroundColor = UIColor.orange
+        
+        let share = UITableViewRowAction(style: .normal, title: "Share") { action, index in
+            print("share button tapped")
+            //show share modal
+        }
+        share.backgroundColor = UIColor.blue
+        
+        return [edit, delete, share ]
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -68,7 +96,10 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
         self.tableView.reloadData();
     }
     
-    func errorUpdatingCrumbs(_ Error: NSError) {
+    func errorUpdatingCrumbs(_ Error: Error) {
+        
+    }
+    func errorSavingData(_ Error: Error) {
         
     }
     

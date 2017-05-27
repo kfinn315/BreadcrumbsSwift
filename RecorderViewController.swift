@@ -15,6 +15,7 @@ import CoreData
 
 class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocationDelegate, CLLocationManagerDelegate{
 
+    @IBOutlet weak var btnDone: UIBarButtonItem!
     @IBOutlet weak var btnStart: UIButton!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var labelA: UILabel!
@@ -30,10 +31,16 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
     override func viewDidLoad() {
         super.viewDidLoad();
         
+        mapView.delegate = self;
+        
         SaveBTN.addTarget(self, action: #selector(self.buttonSaveClicked), for: .touchUpInside)
         btnStart.addTarget(self, action: #selector(self.buttonStartStopClicked), for: .touchUpInside)
         btnReset.addTarget(self, action: #selector(self.buttonResetClicked), for: .touchUpInside)
+        btnDone.action = #selector(self.buttonDoneClicked)
 
+    }
+    func buttonDoneClicked(){
+        self.dismiss(animated: true, completion: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -41,6 +48,7 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
         LocationManager?.delegate = self;
 
         mapView.showsUserLocation = true;
+    
         
         if(LocationManager?.updatesAreOn())!{
             btnStart.titleLabel?.text = "Stop";
@@ -106,13 +114,32 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
     }
     
     //delegate callbacks
-    func errorUpdatingLocations(_ Error: NSError) {
-         print("Could not update locations. \(Error), \(Error.userInfo)")
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        let view = MKAnnotationView()
+        view.image = UIImage.circle(diameter: CGFloat(15),color: UIColor.orange);
+        return view;
+    }
+    func errorUpdatingLocations(_ Error: Error) {
+         print("Could not update locations. \(Error), \(Error.localizedDescription)")
+        
+        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func errorSavingData(_ Error: Error) {
+        print("Could not save data. \(Error), \(Error.localizedDescription)")
+        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
     }
     
     func didUpdateLocations(manager: CLLocationManager, locations: [CLLocation]) {
         let point = locations.last;
         let annotation = MKPointAnnotation();
+        
         annotation.coordinate = (point?.coordinate)!;
         annotation.title = String(describing: point?.coordinate.latitude)+","+String(describing: point?.coordinate.longitude);
         mapView.addAnnotation(annotation);
@@ -123,8 +150,6 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
         crumbsManager.addPointToData(point: point)
         
     }
-    
-    
     internal func savedCrumb(Id: CKRecordID) {
         
     }

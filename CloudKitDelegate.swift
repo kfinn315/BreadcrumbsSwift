@@ -17,5 +17,7 @@ protocol CloudKitDelegate: class {
     
     func CrumbsReset();
     
-    func errorUpdatingCrumbs(_ Error: NSError);
+    func errorUpdatingCrumbs(_ Error: Error);
+    
+    func errorSavingData(_ Error: Error);
 }
