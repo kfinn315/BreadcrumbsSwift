@@ -25,7 +25,7 @@ class SettingsViewController : UIViewController {
         btnDone.action=#selector(btnDoneClicked)
         
         sliderDist.minimumValue = 0;
-        sliderDist.maximumValue = 10000;
+        sliderDist.maximumValue = 100;
         sliderDist.addTarget(self, action: #selector(updateDistLabel), for: .valueChanged )
     }
     
@@ -34,7 +34,7 @@ class SettingsViewController : UIViewController {
         
         segmentAccuracy.selectedSegmentIndex = getAccuracySegment(accuracy: LocationSettings.locationAccuracy);
         sliderDist.value = getSliderVal(distance: LocationSettings.minimumDistance);
-        switchBGUpdates.isOn = LocationSettings.significantUpdatesOn;
+        switchBGUpdates.isOn = LocationSettings.backgroundLocationUpdatesOn;
         switchSigUpdates.isOn = LocationSettings.significantUpdatesOn;
         
         updateDistLabel()
