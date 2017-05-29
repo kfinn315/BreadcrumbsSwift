@@ -10,9 +10,9 @@ import Foundation
 import UIKit
 
 class ContainerViewController: SlideMenuController{
-  
+    
     override func viewDidLoad() {
-        super.viewDidLoad()
+        super.viewDidLoad()        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -20,16 +20,17 @@ class ContainerViewController: SlideMenuController{
         
     }
     
-        override func awakeFromNib() {
-            if let controller = self.storyboard?.instantiateViewController(withIdentifier: "Main") {
-                self.mainViewController = controller
-            }
-            if let controller = self.storyboard?.instantiateViewController(withIdentifier: "NavList") {
-                self.leftViewController = controller
-            }
-            super.awakeFromNib()
+    override func awakeFromNib() {
+        if let controller = self.storyboard?.instantiateViewController(withIdentifier: "Main") {
+            self.mainViewController = controller
         }
-    public func SetMainCrumb(path: Crumb){
+        if let controller = self.storyboard?.instantiateViewController(withIdentifier: "NavList") {
+            self.leftViewController = controller
+        }
+        super.awakeFromNib()
+    }
+    
+    public func SetMainCrumb(path: PathsType){
         (self.mainViewController as! MapViewController).LoadCrumb(path: path);
     }
 }

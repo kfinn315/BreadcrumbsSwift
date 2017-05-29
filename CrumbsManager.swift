@@ -93,14 +93,19 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         self.delegate?.CrumbSaved(Id);
     }
     
-    func CrumbsLoaded(_ Crumbs: Array<Crumb>) {
-    }
-    
     func errorUpdatingCrumbs(_ Error: Error) {
         delegate?.errorUpdatingCrumbs(Error)
     }
     
     func errorSavingData(_ Error: Error) {
         delegate?.errorSavingData(Error)
+    }
+    
+    func CrumbDeleted(_ RecordID: CKRecordID) {
+        
+    }
+    
+    func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
+        
     }
 }

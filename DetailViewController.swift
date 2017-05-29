@@ -9,6 +9,7 @@
 import UIKit
 import MapKit
 
+///not used
 class DetailViewController: UIViewController, MKMapViewDelegate{
     @IBOutlet weak var detailLbl: UILabel!
     @IBOutlet weak var mapView: MKMapView!

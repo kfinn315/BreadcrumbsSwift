@@ -11,36 +11,74 @@ import UIKit
 import CloudKit
 
 
-class EditViewController : UIViewController{
+public class EditViewController : UIViewController, CloudKitDelegate{
     @IBOutlet weak var buttonSave: UIBarButtonItem!
     @IBOutlet weak var buttonCancel: UIBarButtonItem!
-    @IBOutlet weak var tfTitle: UITextField!
+    @IBOutlet weak var tfTitle: UITextField!    
+    @IBOutlet weak var tfDescription: UITextField!
     
-    var RecordId : CKRecordID?
+    var Crumb : PathsType?
     
-    @IBOutlet weak var tfDesc: UITextField!
-    override func viewDidLoad(){
+    override public func viewDidLoad(){
         super.viewDidLoad()
-       
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated);
-        
-        //get crumb data from recordid
-        
-        print("Get crumb data for recordID "+(RecordId?.recordName)!)
         
         buttonSave.action = #selector(ButtonSaveClicked)
         buttonCancel.action = #selector(ButtonCancelClicked)
+        
+    }
+    
+    override public func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated);
+        CloudKitManager.sharedInstance.delegate = self;
+        
+        //get crumb data from recordid
+        
+        print("Edit crumb "+(Crumb?.GetTitle())!)
+        
+        tfTitle.text = Crumb?.GetTitle();
+        tfDescription.text = Crumb?.GetDescription();
+    }
+    
+    override public func viewWillDisappear(_ animated: Bool) {
+        CloudKitManager.sharedInstance.delegate = nil;
     }
     
     func ButtonSaveClicked(){
         //do save
-        self.dismiss(animated: true, completion: nil)
+        Crumb!.SetTitle(Title: tfTitle.text!)
+        Crumb!.SetDescription(Desc: tfDescription.text!)
+        
+        
+        CloudKitManager.UpdatePath(Data:Crumb!);
         
     }
+    
     func ButtonCancelClicked(){
         self.dismiss(animated: true, completion: nil)
     }
+    
+    //CloudKitDelegate
+    func errorUpdatingCrumbs(_ Error: Error) {
+        self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
+    }
+    func errorSavingData(_ Error: Error) {
+        
+    }
+    
+    func CrumbsUpdated(_ Crumbs: Array<PathsType>){
+        
+        self.dismiss(animated: true, completion: nil)
+    }
+    
+    func CrumbSaved(_ Id: CKRecordID) {
+        
+    }
+    
+    func CrumbsReset() {
+        
+    }
+    
+    func CrumbDeleted(_ RecordID: CKRecordID){
+    }
+
 }

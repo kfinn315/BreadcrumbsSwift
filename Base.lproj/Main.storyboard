@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="15G1421" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="lrS-Ks-qp4">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="15G1421" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="DY9-fb-T6B">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -79,18 +79,25 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <prototypes>
-                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="customcell" textLabel="U3g-no-Yij" style="IBUITableViewCellStyleDefault" id="NdA-My-G2I">
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="crumbcell" textLabel="gcy-PR-Fqc" detailTextLabel="5zP-Wt-PBi" style="IBUITableViewCellStyleValue2" id="sHA-F3-ekW">
                                 <rect key="frame" x="0.0" y="28" width="375" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
-                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="NdA-My-G2I" id="QaE-qo-kS3">
-                                    <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="sHA-F3-ekW" id="Rs0-W6-mtM">
+                                    <rect key="frame" x="0.0" y="0.0" width="375" height="43"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
-                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="U3g-no-Yij">
-                                            <rect key="frame" x="15" y="0.0" width="345" height="43.5"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                            <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                                            <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" text="Title" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="gcy-PR-Fqc">
+                                            <rect key="frame" x="15" y="14" width="91" height="16"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" text="Subtitle" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="5zP-Wt-PBi">
+                                            <rect key="frame" x="112" y="14" width="47" height="16"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                                            <nil key="textColor"/>
                                             <nil key="highlightedColor"/>
                                         </label>
                                     </subviews>
@@ -162,7 +169,7 @@
                     <connections>
                         <outlet property="buttonCancel" destination="4hv-QR-ei3" id="4wt-yB-OhV"/>
                         <outlet property="buttonSave" destination="PwK-Pv-xu0" id="Lbx-8G-JVL"/>
-                        <outlet property="tfDesc" destination="Kkv-b4-uPl" id="uAH-yG-Nc5"/>
+                        <outlet property="tfDescription" destination="Kkv-b4-uPl" id="Gcw-lI-BBy"/>
                         <outlet property="tfTitle" destination="pqP-gU-F1n" id="Sjs-xk-yZK"/>
                     </connections>
                 </viewController>
@@ -173,7 +180,7 @@
         <!--Container-->
         <scene sceneID="BhD-vV-Fcg">
             <objects>
-                <viewController title="Container" id="lrS-Ks-qp4" customClass="ContainerViewController" customModule="BreadcrumbsSwift" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="Container" title="Container" id="lrS-Ks-qp4" customClass="ContainerViewController" customModule="BreadcrumbsSwift" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="dgD-nq-ZSl"/>
                         <viewControllerLayoutGuide type="bottom" id="G6A-YE-pir"/>
@@ -186,7 +193,37 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zzJ-DQ-46S" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-2058" y="-3149"/>
+            <point key="canvasLocation" x="-2369" y="-3170"/>
+        </scene>
+        <!--Loading View Controller-->
+        <scene sceneID="f1W-5e-4av">
+            <objects>
+                <viewController id="DY9-fb-T6B" customClass="LoadingViewController" customModule="BreadcrumbsSwift" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="Trk-gF-DWM"/>
+                        <viewControllerLayoutGuide type="bottom" id="ZmT-al-1FA"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="kxQ-Cg-Dz5">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Loading!" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gSi-Rw-HRE">
+                                <rect key="frame" x="154.5" y="323" width="66" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="gSi-Rw-HRE" firstAttribute="centerX" secondItem="kxQ-Cg-Dz5" secondAttribute="centerX" id="ixb-0e-XAj"/>
+                            <constraint firstItem="gSi-Rw-HRE" firstAttribute="centerY" secondItem="kxQ-Cg-Dz5" secondAttribute="centerY" id="vOo-Bh-qbQ"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="9I6-p0-kGG" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-1321" y="-3169"/>
         </scene>
         <!--Live Map-->
         <scene sceneID="NXO-wi-leg">
@@ -236,6 +273,7 @@
                         <outlet property="btnMenu" destination="s2o-xg-PFz" id="hGJ-Od-1Vu"/>
                         <outlet property="btnRecord" destination="Cbf-1L-G2u" id="QLA-Lq-YHX"/>
                         <outlet property="mapView" destination="6bU-8f-qD4" id="N42-zQ-7iH"/>
+                        <outlet property="navBar" destination="wai-y1-5R9" id="4rm-n6-ySG"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="cLi-lS-Ypd" userLabel="First Responder" sceneMemberID="firstResponder"/>

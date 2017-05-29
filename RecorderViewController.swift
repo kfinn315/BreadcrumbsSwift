@@ -31,25 +31,19 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
     override func viewDidLoad() {
         super.viewDidLoad();
         
-        mapView.delegate = self;
-        
         SaveBTN.addTarget(self, action: #selector(self.buttonSaveClicked), for: .touchUpInside)
         btnStart.addTarget(self, action: #selector(self.buttonStartStopClicked), for: .touchUpInside)
         btnReset.addTarget(self, action: #selector(self.buttonResetClicked), for: .touchUpInside)
         btnDone.action = #selector(self.buttonDoneClicked)
 
-    }
-    func buttonDoneClicked(){
-        self.dismiss(animated: true, completion: nil)
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        LocationManager = CoreLocationManager();
-        LocationManager?.delegate = self;
-
         mapView.showsUserLocation = true;
-    
-        
+        LocationManager = CoreLocationManager();
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        mapView.delegate = self;
+        LocationManager?.delegate = self;
+          
         if(LocationManager?.updatesAreOn())!{
             btnStart.titleLabel?.text = "Stop";
         } else{
@@ -58,8 +52,14 @@ class RecorderViewController : UIViewController, MKMapViewDelegate, CoreLocation
     }
     
     override func viewWillDisappear(_ animated: Bool) {
+        mapView.delegate = nil;
+        LocationManager?.delegate = nil;
     }
-            
+    
+    func buttonDoneClicked(){
+        self.dismiss(animated: true, completion: nil)
+    }
+    
     func buttonRecordClicked(){
         if #available(iOS 10.0, *) {
             crumbsManager.clearPoints()

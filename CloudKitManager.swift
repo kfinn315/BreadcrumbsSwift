@@ -13,7 +13,7 @@ import CloudKit
 class CloudKitManager{
     static let sharedInstance = CloudKitManager();
     
-    var crumbs : Array<Crumb>!
+    var crumbs : Array<PathsType>
     let container: CKContainer
     let publicDB: CKDatabase
     let privateDB: CKDatabase
@@ -21,7 +21,7 @@ class CloudKitManager{
     var delegate: CloudKitDelegate?;
     
     internal init(){
-        crumbs = Array<Crumb>();
+        crumbs = Array<PathsType>();
         
         print("CloudKit init")
         container = CKContainer.default()
@@ -45,6 +45,7 @@ class CloudKitManager{
             
             if(error==nil){
                 sharedInstance.delegate?.CrumbSaved(results!.recordID)
+                fetchAllPaths();
             } else{
                 sharedInstance.delegate?.errorSavingData(error!)
             }
@@ -59,7 +60,8 @@ class CloudKitManager{
         var recordIDsArray: [CKRecordID] = []
         
         for crumb in sharedInstance.crumbs {
-            recordIDsArray.append(crumb.RecordId!);
+            recordIDsArray.append((crumb.Record?.recordID)!);
+            fetchAllPaths();
         }
         
         container.fetchUserRecordID { (recordID, error) -> Void in
@@ -79,9 +81,17 @@ class CloudKitManager{
         var addRecords : [CKRecord]?
         var modRecords : [CKRecord]?
         let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordId])
-        operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in print("")}
+        operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in
+            if(error==nil){
+                sharedInstance.delegate?.CrumbDeleted((modRecords?[0])!);
+                fetchAllPaths()
+            } else{
+                sharedInstance.delegate?.errorSavingData(error!)
+            }
+        }
         
         sharedInstance.privateDB.add(operation)
+        
     }
     
     class func fetchPathsForUser(){
@@ -106,12 +116,13 @@ class CloudKitManager{
                         
                         print("performQuery returns "+String(describing: results?.count)+" results")
                         results?.forEach({ (record: CKRecord) in
-                            let path = PathsType(record: record, database: sharedInstance.publicDB).ToCrumb()
+                            let path = PathsType(record: record, database: sharedInstance.publicDB)
                             
                             sharedInstance.crumbs.append(path);
                         })
                         
-                        sharedInstance.delegate!.CrumbsLoaded(sharedInstance.crumbs)
+                        sharedInstance.delegate!.CrumbsUpdated(sharedInstance.crumbs)
+//                        sharedInstance.delegate!.CrumbsLoaded(sharedInstance.crumbs)
                         
                         print("CrumbsManager GetCrumbPaths() returns "+String(sharedInstance.crumbs.count)+" items")
                         
@@ -140,16 +151,26 @@ class CloudKitManager{
             
             print("performQuery returns "+String(describing: results?.count)+"results")
             results?.forEach({ (record: CKRecord) in
-                let path = PathsType(record: record, database: sharedInstance.publicDB).ToCrumb()
+                let path = PathsType(record: record, database: sharedInstance.publicDB)
                 sharedInstance.crumbs.append(path);
             })
             
-            sharedInstance.delegate!.CrumbsLoaded(sharedInstance.crumbs)
+            sharedInstance.delegate!.CrumbsUpdated(sharedInstance.crumbs)
             
             print("CrumbsManager GetCrumbPaths() returns "+String(sharedInstance.crumbs.count)+" items")
             
         })
         
         print("fetchPaths exit")
-    }    
+    }
+    
+    class func UpdatePath(Data: PathsType){
+        let record = Data.Record;
+        //record["Title"] = Data.Title as CKRecordValue?;
+        ///record["Description"] = Data.Description as CKRecordValue?;
+        //record["Points"] = Data.Path as CKRecordValue?;
+        sharedInstance.privateDB.save(record!, completionHandler: {(results, error) -> Void in
+            fetchAllPaths()
+        })
+    }
 }

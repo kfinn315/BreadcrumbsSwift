@@ -12,7 +12,7 @@ import CloudKit
 protocol CrumbsDelegate: class{
     func CrumbSaved(_ Id: CKRecordID);
     
-    func CrumbsLoaded(_ Crumbs: Array<Crumb>);
+    func CrumbsLoaded(_ Crumbs: Array<PathsType>);
     
     func CrumbsReset();
     
