@@ -41,7 +41,14 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
         mapView?.removeOverlays((mapView?.overlays)!)
     }
     
-    
+    func ZoomToPoint(_ Point: CLLocation, animated: Bool){
+        var zoomRect = MKMapRectNull;
+        let mappoint = MKMapPointForCoordinate(Point.coordinate);
+        let pointRect = MKMapRectMake(mappoint.x, mappoint.y, 0.1, 0.1);
+        zoomRect = MKMapRectUnion(zoomRect, pointRect);
+        mapView?.setVisibleMapRect(zoomRect, animated: true);
+    }
+
     func ZoomToFit(){
         var zoomRect = MKMapRectNull;
         for annotation in (mapView?.annotations)!
@@ -53,6 +60,15 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
         mapView?.setVisibleMapRect(zoomRect, animated: true);
     }
     
+    func AddAnnotation(Point: CLLocation, Title: String){
+      //  let point = Location;//locations.last;
+        let annotation = MKPointAnnotation();
+        
+        annotation.coordinate = Point.coordinate;
+        annotation.title = Title;
+        
+        mapView?.setCenter(Point.coordinate, animated: false)
+    }
     
     func AddLine(crumb: Crumb){
         var locations = Array<CLLocation>();
@@ -85,6 +101,4 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
         view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
         return view;
     }
-    
-
 }

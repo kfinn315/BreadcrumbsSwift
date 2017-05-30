@@ -44,6 +44,7 @@ class CloudKitManager{
         sharedInstance.privateDB.save(record, completionHandler:  {(results, error) -> Void in
             
             if(error==nil){
+                print("Saved crumb "+record.recordID.recordName);
                 sharedInstance.delegate?.CrumbSaved(results!.recordID)
                 fetchAllPaths();
             } else{
@@ -61,13 +62,10 @@ class CloudKitManager{
         
         for crumb in sharedInstance.crumbs {
             recordIDsArray.append((crumb.Record?.recordID)!);
-            fetchAllPaths();
         }
         
         container.fetchUserRecordID { (recordID, error) -> Void in
                 recordIDsArray.append(recordID!);
-            
-            print("fetchPaths exit")
         }
         
         let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: recordIDsArray)
@@ -121,8 +119,7 @@ class CloudKitManager{
                             sharedInstance.crumbs.append(path);
                         })
                         
-                        sharedInstance.delegate!.CrumbsUpdated(sharedInstance.crumbs)
-//                        sharedInstance.delegate!.CrumbsLoaded(sharedInstance.crumbs)
+                        sharedInstance.delegate?.CrumbsUpdated(sharedInstance.crumbs)
                         
                         print("CrumbsManager GetCrumbPaths() returns "+String(sharedInstance.crumbs.count)+" items")
                         
@@ -133,7 +130,7 @@ class CloudKitManager{
         }
     }
     
-    class func fetchAllPaths(){
+    class func fetchAllPaths() {
         print("fetchAllPaths")
         let locationPredicate = NSPredicate(value: true);
         
@@ -155,7 +152,7 @@ class CloudKitManager{
                 sharedInstance.crumbs.append(path);
             })
             
-            sharedInstance.delegate!.CrumbsUpdated(sharedInstance.crumbs)
+            sharedInstance.delegate?.CrumbsUpdated(sharedInstance.crumbs)
             
             print("CrumbsManager GetCrumbPaths() returns "+String(sharedInstance.crumbs.count)+" items")
             

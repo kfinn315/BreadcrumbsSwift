@@ -53,7 +53,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         }
     }
     
-    func startLocationUpdates(){
+    func startLocationUpdates() {
         print("start Location Updates()")
         
         if(LocationSettings.backgroundLocationUpdatesOn){

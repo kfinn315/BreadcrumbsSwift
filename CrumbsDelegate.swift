@@ -19,4 +19,6 @@ protocol CrumbsDelegate: class{
     func errorUpdatingCrumbs(_ Error: Error);
     
     func errorSavingData(_ Error: Error);
+    
+    func CrumbsUpdated(_ Crumbs: Array<PathsType>);
 }

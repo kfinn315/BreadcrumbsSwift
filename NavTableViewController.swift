@@ -87,11 +87,14 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
             tableView.setEditing(false, animated: true)
             //show delete confirm
             let alert = UIAlertController.init(title: "Delete Crumb?", message: "Are you sure you want to permanently delete this Crumb?", preferredStyle: UIAlertControllerStyle.alert);
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: {(UIAlertAction)-> Void in                 let remove = self.paths[index.row];
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: {(UIAlertAction)-> Void in
+                tableView.setEditing(false, animated: true)
+                let remove = self.paths[index.row];
                 CloudKitManager.RemovePath(recordId: (remove.Record?.recordID)!)
             }
             ));
-            alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: {(UIAlertAction)-> Void in
+            alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: {(UIAlertAction)-> Void in                
+                tableView.setEditing(false, animated: true)
             }))
             self.present(alert, animated: true, completion:  nil)
         }

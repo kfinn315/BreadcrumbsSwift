@@ -33,11 +33,12 @@ class CrumbsManager: NSObject, CloudKitDelegate {
     }
     
     func SaveCurrentPath(){
+        CloudKitManager.sharedInstance.delegate = self;
         let currentpath = GetCurrentPath();
         SaveCrumb(path: currentpath);
     }
     
-    func SaveCrumb(path: Array<CLLocation>){
+    private func SaveCrumb(path: Array<CLLocation>){
         print("saveCrumb")
         
         let crumb = Crumb();
@@ -48,8 +49,9 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         crumb.Path = path;
         
         CloudKitManager.SavePath(crumb);
-    }
-       func CrumbsReset(){
+    }    
+    
+    func CrumbsReset(){
         CloudKitManager.RemoveAllPaths()
     }
     
@@ -102,10 +104,9 @@ class CrumbsManager: NSObject, CloudKitDelegate {
     }
     
     func CrumbDeleted(_ RecordID: CKRecordID) {
-        
     }
     
     func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
-        
+        self.delegate?.CrumbsUpdated(Crumbs);
     }
 }
