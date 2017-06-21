@@ -15,6 +15,7 @@ import UIKit
 class CrumbsManager: NSObject, CloudKitDelegate {
     var coreData = CoreDataManager();
     var delegate : CrumbsDelegate?;
+    static var CurrentCrumb : PathsType?;
     
     internal override init() {
         super.init();
@@ -22,23 +23,19 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         CloudKitManager.sharedInstance.delegate = self;
     }
     
-    func addPointToData(point: CLLocation!){
+    func addPointToData(point: CLLocation!) throws {
         print("append point");
         
-        if #available(iOS 10.0, *) {
-            coreData.savePoint(latitude:point.coordinate.latitude, longitude:point.coordinate.longitude, timestamp:point.timestamp)
-        } else {
-            // Fallback on earlier versions
-        }
+            try coreData.savePoint(latitude:point.coordinate.latitude, longitude:point.coordinate.longitude, timestamp:point.timestamp)
     }
     
-    func SaveCurrentPath(){
+    func SaveCurrentPath() throws {
         CloudKitManager.sharedInstance.delegate = self;
-        let currentpath = GetCurrentPath();
-        SaveCrumb(path: currentpath);
+        let currentpath = try GetCurrentPath();
+        try SaveCrumb(path: currentpath);
     }
     
-    private func SaveCrumb(path: Array<CLLocation>){
+    private func SaveCrumb(path: Array<CLLocation>) throws {
         print("saveCrumb")
         
         let crumb = Crumb();
@@ -48,22 +45,13 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         crumb.Title = dateFormatter.string(from: Date())+" "+String(path.count)+" PTS"
         crumb.Path = path;
         
-        CloudKitManager.SavePath(crumb);
-    }    
-    
-    func CrumbsReset(){
-        CloudKitManager.RemoveAllPaths()
+         try CloudKitManager.SavePath(crumb);
     }
     
-    
-    func GetCurrentPath() ->Array<CLLocation>{
+    func GetCurrentPath() throws ->Array<CLLocation>{
         var points : [NSManagedObject]?
         
-        if #available(iOS 10.0, *) {
-            points = coreData.fetchPoints()
-        } else {
-            // Fallback on earlier versions
-        };
+        points = try coreData.fetchPoints()
         
         var currentPath = Array<CLLocation>();
         // currentPath.removeAll()
@@ -79,16 +67,16 @@ class CrumbsManager: NSObject, CloudKitDelegate {
         return currentPath;
     }
     
-    func clearPoints(){
-        if #available(iOS 10.0, *) {
-            coreData.clearPoints()
-        } else {
-            // Fallback on earlier versions
-        };
+    func clearPoints() throws{
+            try coreData.clearPoints()
     }
 
     
     //delegate callbacks
+    func CrumbsReset() throws {
+        try CloudKitManager.RemoveAllPaths()
+    }
+    
     func CrumbSaved(_ Id: CKRecordID) {
         print("crumb saved");
         //  currentPath.removeAll();

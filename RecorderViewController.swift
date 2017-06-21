@@ -15,29 +15,53 @@ import CoreData
 
 class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocationManagerDelegate, CrumbsDelegate{
 
-    @IBOutlet weak var btnDone: UIBarButtonItem!
+//    @IBOutlet weak var btnDone: UIBarButtonItem!
     @IBOutlet weak var btnStart: UIButton!
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var labelA: UILabel!
-    @IBOutlet weak var labelB: UILabel!
-    @IBOutlet weak var SaveBTN: UIButton!
-    @IBOutlet weak var btnSettings: UIButton!
-    @IBOutlet weak var btnReset: UIButton!
+  //  @IBOutlet weak var labelA: UILabel!
+  //  @IBOutlet weak var labelB: UILabel!
+  //  @IBOutlet weak var SaveBTN: UIButton!
+//    @IBOutlet weak var btnReset: UIButton!
+//    @IBOutlet weak var btnSettings: UIBarButtonItem!
     
     var LocationManager : CoreLocationManager?;
     var crumbsManager = CrumbsManager();
     var MapManager = MapViewManager();
+    var SaveAlert : UIAlertController?;
     
+    init(_ coder: NSCoder? = nil) {
+        
+        if let coder = coder {
+            super.init(coder: coder)!
+        } else {
+            super.init(nibName: nil, bundle:nil)
+        }
+        
+        self.SaveAlert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
+        let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonSaveClicked()})
+        let actionReset = UIAlertAction.init(title: "Reset", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonResetClicked()})
+        self.SaveAlert?.addAction(actionSave)
+        self.SaveAlert?.addAction(actionReset)
+     
+        
+    }
+    
+    required convenience init(coder: NSCoder) {
+        self.init(coder)
+    }
     override func viewDidLoad() {
         super.viewDidLoad();
         
-        SaveBTN.addTarget(self, action: #selector(self.buttonSaveClicked), for: .touchUpInside)
+       // SaveBTN.addTarget(self, action: #selector(self.buttonSaveClicked), for: .touchUpInside)
         btnStart.addTarget(self, action: #selector(self.buttonStartStopClicked), for: .touchUpInside)
-        btnReset.addTarget(self, action: #selector(self.buttonResetClicked), for: .touchUpInside)
-        btnDone.action = #selector(self.buttonDoneClicked)
-
+    //    btnReset.addTarget(self, action: #selector(self.buttonResetClicked), for: .touchUpInside)
+//        btnDone.action = #selector(self.buttonDoneClicked)
+        
+        navigationController?.navigationItem.rightBarButtonItem?.action = #selector(self.buttonSettingsClicked)
+        
         mapView.showsUserLocation = true;
         LocationManager = CoreLocationManager();
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -51,29 +75,24 @@ class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocatio
             btnStart.titleLabel?.text = "Start";
         }
         
-        MapManager.ZoomToPoint(CoreLocationManager.LManager.location!, animated: true)
+        if let number = CoreLocationManager.LManager?.location {
+            MapManager.ZoomToPoint(number, animated: true)
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-//        mapView.delegate = nil;
         LocationManager?.delegate = nil;
         crumbsManager.delegate = nil;
-
     }
-    
     func buttonDoneClicked(){
+        stopUpdating();
         self.dismiss(animated: true, completion: nil)
     }
     
-    func buttonRecordClicked(){
-        if #available(iOS 10.0, *) {
-            crumbsManager.clearPoints()
-        } else {
-            // Fallback on earlier versions
-        }
-        
-        LocationManager?.startLocationUpdates();
+    func buttonSettingsClicked(){
+        navigationController?.present(SettingsViewController(), animated: true, completion: nil)
     }
+    
     func buttonStartStopClicked(){
         if(LocationManager?.updatesAreOn())!{
             stopUpdating()
@@ -83,15 +102,15 @@ class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocatio
         }
     }
     
-    func stopUpdating(){
+    private func stopUpdating(){
         LocationManager?.stopLocationUpdates();
     }
     
-    func startUpdating(){
-        if #available(iOS 10.0, *) {
-            crumbsManager.clearPoints()
-        } else {
-            // Fallback on earlier versions
+    private func startUpdating(){
+        do{
+            try crumbsManager.clearPoints()
+        } catch{
+            //show error
         }
         
         LocationManager?.startLocationUpdates();
@@ -107,21 +126,30 @@ class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocatio
         self.SaveCrumb(crumb:mycrumb)
     }
     
-    func SaveCrumb(crumb:Crumb){
+    private func SaveCrumb(crumb:Crumb){
         print("saveCrumb")
         
-        crumbsManager.SaveCurrentPath();
-        mapView.removeAnnotations(mapView.annotations);
+        do{
+            try crumbsManager.SaveCurrentPath();
+        } catch{
+            //show error
+        }
+        MapManager.ClearMap()
         
     }
     
     func buttonResetClicked(){
-        crumbsManager.clearPoints();
-        mapView.removeAnnotations(mapView.annotations);
+        do{
+            try crumbsManager.clearPoints();
+        } catch{
+            //show error
+        }
+        
+        MapManager.ClearMap()
     }
     
     //delegate callbacks
-       func errorUpdatingLocations(_ Error: Error) {
+    func errorUpdatingLocations(_ Error: Error) {
          print("Could not update locations. \(Error), \(Error.localizedDescription)")
         
         let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
@@ -143,11 +171,23 @@ class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocatio
         let title = String(describing: point?.coordinate.latitude)+","+String(describing: point?.coordinate.longitude);
 
         MapManager.AddAnnotation(Point: point!, Title: title);
-        crumbsManager.addPointToData(point: point)
+        
+        do{
+            try crumbsManager.addPointToData(point: point)
+        } catch{
+            //show error
+        }
     }
     
     func didStopLocationUpdates() {
-        btnStart.setTitle("Start", for: .normal);
+        if(btnStart.titleLabel?.text == "Stop"){
+            btnStart.setTitle("Start", for: .normal);
+        
+            if let alertcontroller = SaveAlert{
+                present(alertcontroller, animated: true)
+            }
+        }
+        
     }
     
     func didStartLocationUpdates() {
@@ -156,7 +196,7 @@ class RecorderViewController : UIViewController, CoreLocationDelegate, CLLocatio
     func CrumbsLoaded(_ Crumbs: Array<PathsType>) {
     }
     func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
-        self.dismiss(animated: true, completion: nil)
+        //self.dismiss(animated: true, completion: nil)
     }
     func CrumbSaved(_ Id: CKRecordID) {
         self.dismiss(animated: true, completion: nil)

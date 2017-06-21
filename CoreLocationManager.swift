@@ -1,4 +1,4 @@
-                                //
+//
 //  MyLocationManager.swift
 //  BreadcrumbsSwift
 //
@@ -14,9 +14,8 @@ import UIKit
 
 class CoreLocationManager: NSObject, CLLocationManagerDelegate{
     static let sharedIntance = CoreLocationManager();
-        var delegate : CoreLocationDelegate?;
-        var currentPathID = 0;
-        static var LManager : CLLocationManager!;
+    var delegate : CoreLocationDelegate?;
+    static var LManager : CLLocationManager?;
     var updating = false;
     
     internal override init() {
@@ -30,18 +29,18 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
             LocationSettings.significantUpdatesOn  = false;
         }
         
-        CoreLocationManager.LManager.delegate = self;
+        CoreLocationManager.LManager?.delegate = self;
         CoreLocationManager.updateSettings()
     }
-
+    
     static func updateSettings(){
-        LManager.desiredAccuracy = LocationSettings.locationAccuracy;
-        LManager.distanceFilter = LocationSettings.minimumDistance;
-        LManager.allowsBackgroundLocationUpdates = LocationSettings.backgroundLocationUpdatesOn;
+        LManager?.desiredAccuracy = LocationSettings.locationAccuracy;
+        LManager?.distanceFilter = LocationSettings.minimumDistance;
+        LManager?.allowsBackgroundLocationUpdates = LocationSettings.backgroundLocationUpdatesOn;
         if(LocationSettings.significantUpdatesOn){
-            LManager.startMonitoringSignificantLocationChanges()
+            LManager?.startMonitoringSignificantLocationChanges()
         } else{
-            LManager.stopMonitoringSignificantLocationChanges();
+            LManager?.stopMonitoringSignificantLocationChanges();
         }
     }
     
@@ -49,7 +48,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         print("Manager did change auth status to "+String(describing: status))
         if(CLLocationManager.locationServicesEnabled()){
             CoreLocationManager.LManager = manager;
-            CoreLocationManager.LManager.startUpdatingLocation()
+            CoreLocationManager.LManager?.startUpdatingLocation()
         }
     }
     
@@ -57,21 +56,21 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         print("start Location Updates()")
         
         if(LocationSettings.backgroundLocationUpdatesOn){
-            CoreLocationManager.LManager.allowsBackgroundLocationUpdates = true;
+            CoreLocationManager.LManager?.allowsBackgroundLocationUpdates = true;
         }
         let authStatus = CLLocationManager.authorizationStatus();
         print("CLLocationManager auth status = "+String(describing: authStatus))
         if(authStatus != CLAuthorizationStatus.authorizedAlways && authStatus != CLAuthorizationStatus.authorizedWhenInUse){
-            CoreLocationManager.LManager.requestWhenInUseAuthorization();
+            CoreLocationManager.LManager?.requestWhenInUseAuthorization();
             print("CL RequestWhenInUseAuthorization()")
         } else{
             //CoreLocationManager.LManager.requestLocation();
             if(CLLocationManager.locationServicesEnabled()){
                 if(LocationSettings.significantUpdatesOn){
-                    CoreLocationManager.LManager.startMonitoringSignificantLocationChanges();
+                    CoreLocationManager.LManager?.startMonitoringSignificantLocationChanges();
                 }
                 else{
-                    CoreLocationManager.LManager.startUpdatingLocation()
+                    CoreLocationManager.LManager?.startUpdatingLocation()
                 }
                 updating = true;
                 delegate?.didStartLocationUpdates();
@@ -85,12 +84,12 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
     func updatesAreOn() -> Bool{
         return updating;
     }
-
+    
     
     func stopLocationUpdates(){
-        CoreLocationManager.LManager.allowsBackgroundLocationUpdates = false;
-        CoreLocationManager.LManager.stopMonitoringSignificantLocationChanges();
-        CoreLocationManager.LManager.stopUpdatingLocation()
+        CoreLocationManager.LManager?.allowsBackgroundLocationUpdates = false;
+        CoreLocationManager.LManager?.stopMonitoringSignificantLocationChanges();
+        CoreLocationManager.LManager?.stopUpdatingLocation()
         
         print("Stop location updates")
         updating = false;
@@ -101,7 +100,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
                          didUpdateLocations locations: [CLLocation]) {
         print("location manager didUpdateLocations");
         
-        (delegate!).didUpdateLocations(manager: CoreLocationManager.LManager, locations: locations);
+        (delegate)?.didUpdateLocations(manager: CoreLocationManager.LManager!, locations: locations);
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

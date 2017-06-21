@@ -15,7 +15,7 @@ protocol CloudKitDelegate: class {
     
     //func CrumbsLoaded(_ Crumbs: Array<PathsType>);
     
-    func CrumbsReset();
+    func CrumbsReset() throws;
     
     func CrumbDeleted(_ RecordID: CKRecordID);
     

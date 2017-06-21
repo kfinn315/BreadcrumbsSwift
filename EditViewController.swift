@@ -14,7 +14,7 @@ import CloudKit
 public class EditViewController : UIViewController, CloudKitDelegate{
     @IBOutlet weak var buttonSave: UIBarButtonItem!
     @IBOutlet weak var buttonCancel: UIBarButtonItem!
-    @IBOutlet weak var tfTitle: UITextField!    
+    @IBOutlet weak var tfTitle: UITextField!
     @IBOutlet weak var tfDescription: UITextField!
     
     var Crumb : PathsType?
@@ -44,13 +44,18 @@ public class EditViewController : UIViewController, CloudKitDelegate{
     }
     
     func ButtonSaveClicked(){
-        //do save
-        Crumb!.SetTitle(Title: tfTitle.text!)
-        Crumb!.SetDescription(Desc: tfDescription.text!)
         
-        
-        CloudKitManager.UpdatePath(Data:Crumb!);
-        
+        if let CrumbUnwrapped = Crumb {
+            //do save
+            CrumbUnwrapped.SetTitle(Title: tfTitle.text!)
+            CrumbUnwrapped.SetDescription(Desc: tfDescription.text!)
+            
+            do{
+                try CloudKitManager.UpdatePath(Record:CrumbUnwrapped.Record!);
+            }catch {
+                self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
+            }
+        }
     }
     
     func ButtonCancelClicked(){
@@ -80,5 +85,5 @@ public class EditViewController : UIViewController, CloudKitDelegate{
     
     func CrumbDeleted(_ RecordID: CKRecordID){
     }
-
+    
 }

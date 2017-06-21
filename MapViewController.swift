@@ -11,26 +11,43 @@ import MapKit
 import CloudKit
 
 class MapViewController: UIViewController, CloudKitDelegate {
-    
-    @IBOutlet weak var navBar: UINavigationBar!
-    @IBOutlet weak var btnMenu: UIBarButtonItem!
+    @IBOutlet weak var buttonShare: UIButton!
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var btnRecord: UIBarButtonItem!
     
-    var crumbs :Array<PathsType>!
     var mapManager : MapViewManager?;
+    var container : ContainerViewController?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        btnMenu.action = #selector(ToggleMenu)
         mapManager = MapViewManager(map: mapView);
+        
+        self.container = (self.parent?.parent as! ContainerViewController);
     }
     
     override func viewWillAppear(_ animated: Bool) {
         CloudKitManager.sharedInstance.delegate = self;
         
-        crumbs = CloudKitManager.sharedInstance.crumbs;
+        buttonShare.addTarget(self, action: #selector(sharePath), for: .touchDown)
+    }
+    
+    func sharePath(){
+        do{
+            if let record = container?.GetMainCrumb()?.Record{
+                try CloudKitManager.SetPublicPath(record: record, share: buttonShare.titleLabel?.text=="Share")
+            }
+        } catch{
+            
+        }
+    }
+    
+    @IBAction public func ToggleMenu(){
+        (self.parent?.parent as! ContainerViewController).toggleLeft()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        navigationItem.leftBarButtonItem?.action = #selector(ToggleMenu)
+        //navigationController?.navigationItem.rightBarButtonItem?.action = #selector(showRecordView)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -42,16 +59,29 @@ class MapViewController: UIViewController, CloudKitDelegate {
         // Dispose of any resources that can be recreated.
     }
     
-    //load crumb and display
+    public func showRecordView(){
+        navigationController?.present(RecorderViewController(), animated: true, completion: nil)
+    }
+    //load main crumb and display
     public func LoadCrumb(path: PathsType){
         ClearMap();
-        navBar.topItem?.title = path.GetTitle()
+        self.navigationController?.navigationItem.title = path.GetTitle()
+        setShared(path.GetIsShared());
+        
         AddLine(crumb: path);
         mapManager?.ZoomToFit();
+        
+        CrumbsManager.CurrentCrumb = path;
     }
-
-    func ToggleMenu(){
-        (self.parent as! ContainerViewController).toggleLeft()
+    
+    func setShared(_ isShared: Bool){
+        if(isShared){
+            buttonShare.backgroundColor = UIColor.yellow;
+            buttonShare.setTitle( "Unshare", for: UIControlState.normal)
+        } else{
+            buttonShare.backgroundColor = UIColor.clear;
+            buttonShare.setTitle("Share", for: UIControlState.normal)
+        }
     }
     
     func ClearMap(){
@@ -90,11 +120,11 @@ class MapViewController: UIViewController, CloudKitDelegate {
     }
     func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
         DispatchQueue.main.async {
-            self.crumbs = Crumbs;
-            print("GetCrumbData->update map w/ "+String(self.crumbs.count)+" crumbs");
+            //self.userpaths = Crumbs;
+            print("GetCrumbData->update map w/ "+String(Crumbs.count)+" crumbs");
             
-            for crumb in self.crumbs{
-                self.AddLine(crumb: crumb)
+            for path in Crumbs{
+                self.AddLine(crumb: path)
             }
             self.mapView.setNeedsLayout();
             self.mapManager?.ZoomToFit();
@@ -102,7 +132,7 @@ class MapViewController: UIViewController, CloudKitDelegate {
             print("GetCrumbData-> mapView.setNeedsLayout()");
             
         }
-
+        
     }
 }
 

@@ -16,13 +16,28 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
     override func viewWillAppear(_ animated: Bool) {
 
         CloudKitManager.sharedInstance.delegate = self
-        CloudKitManager.fetchAllPaths()
+    
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        
-       
-
+    override func viewDidAppear(_ animated: Bool) {
+        CloudKitManager.GetICloudAccountStatus(Callback: {(status: CKAccountStatus)->Void in
+            if(status == CKAccountStatus.available){
+                do{
+                    try CloudKitManager.fetchPathsForUser()
+                } catch {
+                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
+                }
+                do{
+                    try CloudKitManager.fetchPublicPaths()
+                } catch {
+                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
+                }
+             
+            } else{
+                self.ShowNextVC();
+            }
+        })
+      
     }
     
     //CloudKitDelegate
@@ -30,10 +45,19 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
         self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
     }
     func errorSavingData(_ Error: Error) {
-        
+        self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
     }
     
+    func showErrorAlert(title: String, message: String, Error: Error) {
+        self.present(UIAlertController(title: title, message: message+": "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
+    }
+    
+
     func CrumbsUpdated(_ Crumbs: Array<PathsType>){
+        ShowNextVC();
+    }
+    
+    func ShowNextVC(){
         CloudKitManager.sharedInstance.delegate = nil
         let container = self.storyboard?.instantiateViewController(withIdentifier: "Container")
         self.modalPresentationStyle = UIModalPresentationStyle.fullScreen;

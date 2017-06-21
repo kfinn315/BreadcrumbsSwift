@@ -11,7 +11,7 @@ import UIKit
 import CoreLocation
 
 class SettingsViewController : UIViewController {
-    @IBOutlet weak var btnDone: UIBarButtonItem!
+   // @IBOutlet weak var btnDone: UIBarButtonItem!
     @IBOutlet weak var segmentAccuracy: UISegmentedControl!
     
     @IBOutlet weak var switchBGUpdates: UISwitch!
@@ -22,7 +22,7 @@ class SettingsViewController : UIViewController {
     override func viewDidLoad(){
         super.viewDidLoad()
         
-        btnDone.action=#selector(btnDoneClicked)
+       // btnDone.action=#selector(btnDoneClicked)
         
         sliderDist.minimumValue = 0;
         sliderDist.maximumValue = 100;

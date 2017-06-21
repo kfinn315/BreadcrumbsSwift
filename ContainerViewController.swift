@@ -10,6 +10,7 @@ import Foundation
 import UIKit
 
 class ContainerViewController: SlideMenuController{
+    private var CurrentCrumb : PathsType?
     
     override func viewDidLoad() {
         super.viewDidLoad()        
@@ -21,7 +22,7 @@ class ContainerViewController: SlideMenuController{
     }
     
     override func awakeFromNib() {
-        if let controller = self.storyboard?.instantiateViewController(withIdentifier: "Main") {
+        if let controller = self.storyboard?.instantiateViewController(withIdentifier: "navController") {
             self.mainViewController = controller
         }
         if let controller = self.storyboard?.instantiateViewController(withIdentifier: "NavList") {
@@ -30,8 +31,17 @@ class ContainerViewController: SlideMenuController{
         super.awakeFromNib()
     }
     
-    public func SetMainCrumb(path: PathsType){
-        (self.mainViewController as! MapViewController).LoadCrumb(path: path);
+    public func SetMainCrumb(path: PathsType?){
+        CurrentCrumb = path;
+        if let unwrappedPath = path{
+            (((self.mainViewController as! UINavigationController).topViewController) as! MapViewController).LoadCrumb(path: unwrappedPath);
+        } else{
+            (((self.mainViewController as! UINavigationController).topViewController) as! MapViewController).ClearMap()
+        }        
+    }
+    
+    public func GetMainCrumb() -> PathsType?{
+        return CurrentCrumb;
     }
 }
 

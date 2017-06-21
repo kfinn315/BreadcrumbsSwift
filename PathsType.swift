@@ -87,5 +87,13 @@ class PathsType{
         Record?["UserName"] = UserName as CKRecordValue;
     }
     
+    func GetIsShared() -> Bool{
+        let isShared = Record?["IsShared"] as! Int32?
+        if let isSharedUnwrapped = isShared{
+            return isSharedUnwrapped==1;
+        }
+        
+        return false;
+    }
     
 }

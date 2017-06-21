@@ -27,6 +27,9 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
         mapView?.delegate = self;
     }
     
+    deinit {
+        mapView?.delegate = nil;
+    }
     
     //load crumb and display
     public func LoadCrumb(path: Crumb){
