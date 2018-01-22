@@ -8,12 +8,13 @@
 
 import Foundation
 import CloudKit
+import CoreLocation
 
 protocol CoreLocationDelegate: class
 {
     func errorUpdatingLocations(_ Error: Error);
     
-    func didUpdateLocations(manager: CLLocationManager, locations: [CLLocation]);
+    func didUpdateLocations(manager: CLLocationManager, location: CLLocation);
     
     func didStartLocationUpdates();
     

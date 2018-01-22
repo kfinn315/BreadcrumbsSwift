@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MapViewController.swift
 //  BreadcrumbsSwift
 //
 //  Created by Kevin Finn on 4/10/17.
@@ -9,79 +9,59 @@
 import UIKit
 import MapKit
 import CloudKit
+import Photos
 
 class MapViewController: UIViewController, CloudKitDelegate {
     @IBOutlet weak var buttonShare: UIButton!
     @IBOutlet weak var mapView: MKMapView!
     
+    
+    public var path : Path?
     var mapManager : MapViewManager?;
-    var container : ContainerViewController?
+    //var container : ContainerViewController?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         mapManager = MapViewManager(map: mapView);
         
-        self.container = (self.parent?.parent as! ContainerViewController);
+        //        self.container = (self.parent?.parent as! ContainerViewController);
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        CloudKitManager.sharedInstance.delegate = self;
         
-        buttonShare.addTarget(self, action: #selector(sharePath), for: .touchDown)
-    }
-    
-    func sharePath(){
-        do{
-            if let record = container?.GetMainCrumb()?.Record{
-                try CloudKitManager.SetPublicPath(record: record, share: buttonShare.titleLabel?.text=="Share")
+        if path != nil {
+            mapManager?.LoadCrumb(path: path!)
+            if path!.albumData != nil {
+                let assets = PhotoManager.getImages(path!.albumData!.collection)
+                AddImagePoints(assets)
             }
-        } catch{
-            
         }
     }
     
-    @IBAction public func ToggleMenu(){
-        (self.parent?.parent as! ContainerViewController).toggleLeft()
-    }
     
     override func viewDidAppear(_ animated: Bool) {
-        navigationItem.leftBarButtonItem?.action = #selector(ToggleMenu)
-        //navigationController?.navigationItem.rightBarButtonItem?.action = #selector(showRecordView)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        CloudKitManager.sharedInstance.delegate = nil;
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
-    public func showRecordView(){
-        navigationController?.present(RecorderViewController(), animated: true, completion: nil)
-    }
     //load main crumb and display
     public func LoadCrumb(path: PathsType){
         ClearMap();
         self.navigationController?.navigationItem.title = path.GetTitle()
-        setShared(path.GetIsShared());
+        //setShared(path.GetIsShared());
         
         AddLine(crumb: path);
         mapManager?.ZoomToFit();
         
         CrumbsManager.CurrentCrumb = path;
-    }
-    
-    func setShared(_ isShared: Bool){
-        if(isShared){
-            buttonShare.backgroundColor = UIColor.yellow;
-            buttonShare.setTitle( "Unshare", for: UIControlState.normal)
-        } else{
-            buttonShare.backgroundColor = UIColor.clear;
-            buttonShare.setTitle("Share", for: UIControlState.normal)
-        }
+        
+
     }
     
     func ClearMap(){
@@ -105,6 +85,34 @@ class MapViewController: UIViewController, CloudKitDelegate {
         
         self.mapView.add(polyline)
     }
+//    func AddImageCollection(_ album: PHAssetCollection){
+//            var assets : [PHAsset] = []
+//            let result = PHAsset.fetchAssets(in: album, options: nil)
+//            result.enumerateObjects({ (asset, start, finish) in
+//                if asset.location != nil{
+//                    assets.append(asset)
+//                }
+//            })
+//
+//            AddImagePoints(assets)
+//    }
+    func AddImagePoints(_ assets: [PHAsset]){
+        
+        for asset in assets {
+            if let loc = asset.location {
+                PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: { (img, dict) in
+                    let annotation = ImageAnnotation()
+                    annotation.coordinate = loc.coordinate
+                    annotation.title = asset.creationDate?.datestring ?? ""
+                    annotation.image = img
+                    self.mapView.addAnnotation(annotation)
+                })
+            }
+        }
+        
+        //self.mapView.add(points)
+    }
+    
     func CrumbSaved(_ Id: CKRecordID) {
     }
     
@@ -133,6 +141,24 @@ class MapViewController: UIViewController, CloudKitDelegate {
             
         }
         
+    }
+}
+
+class ImageAnnotation : MKPointAnnotation {
+    var image : UIImage?
+    
+    override init(){
+        super.init()
+    }
+    
+    public func getPinView() -> MKPinAnnotationView{
+        let pin = MKPinAnnotationView(annotation: self, reuseIdentifier: "imagePin")
+        pin.pinTintColor = UIColor.darkGray
+        pin.canShowCallout = true
+        pin.animatesDrop = true
+        let imageview = UIImageView(image: image)
+        pin.leftCalloutAccessoryView = imageview
+        return pin
     }
 }
 

@@ -57,7 +57,7 @@ class SettingsViewController : UIViewController {
         LocationSettings.minimumDistance = getDistanceVal(sliderval: sliderDist.value);
         LocationSettings.backgroundLocationUpdatesOn = switchBGUpdates.isOn;
         LocationSettings.significantUpdatesOn = switchSigUpdates.isOn;
-        CoreLocationManager.updateSettings();
+       // CoreLocationManager.updateSettings();
     }
     
     func getAccuracySegment(accuracy: CLLocationAccuracy)->Int{

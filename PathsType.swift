@@ -12,18 +12,9 @@ import CloudKit
 
 class PathsType{
 
-   // var UserId:Int;
-    //  var Title:String;
-  //  var Description:String;
-//    var Points:Array<CLLocation>;
     public var Record:CKRecord?;
     
     init(){
-    //    self.UserId = UserId;
-//        self.Title = Title;
-//        self.Description = Description
-//        self.Points = Points;
-        
     }
     
     init(record:CKRecord, database:CKDatabase){
@@ -55,14 +46,19 @@ class PathsType{
     func GetDescription() -> String?{
         return Record!["Description"] as! String?;
     }
-    internal func ToCrumb() -> Crumb{
-        let crumb = Crumb();
+    internal func ToCrumb() -> Path{
+        let crumb = Path();
         
-        crumb.Description = Record?["Description"] as! String
-        crumb.Path = Record?["Points"] as! Array<CLLocation>;
-
-        crumb.Title = Record?["Title"] as! String
-        crumb.RecordId = Record?["UserId"] as? CKRecordID;
+        if let descr = Record?["Description"] as? String{
+            crumb.notes = descr
+        }
+        
+        if let points = Record?["Points"] as? Array<Point> {
+//            var pts = points //broken
+        }
+        
+        crumb.title = Record?["Title"] as? String ?? ""
+        //crumb.RecordId = Record?["UserId"] as? CKRecordID;
         
         return crumb;
     }

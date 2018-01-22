@@ -15,9 +15,7 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
     var strokeColor = UIColor.red;
     var lineWidth = CGFloat(2.0);
 
-    public override init(){
-        
-    }
+    public override init(){ }
     
     public convenience init(map: MKMapView)
     {
@@ -32,7 +30,7 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
     }
     
     //load crumb and display
-    public func LoadCrumb(path: Crumb){
+    public func LoadCrumb(path: Path){
         ClearMap();
         AddLine(crumb: path);
         ZoomToFit();
@@ -63,28 +61,29 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
         mapView?.setVisibleMapRect(zoomRect, animated: true);
     }
     
-    func AddAnnotation(Point: CLLocation, Title: String){
+    func AddAnnotation(Point: CLLocationCoordinate2D, Title: String){
       //  let point = Location;//locations.last;
         let annotation = MKPointAnnotation();
         
-        annotation.coordinate = Point.coordinate;
+        annotation.coordinate = Point
         annotation.title = Title;
         
-        mapView?.setCenter(Point.coordinate, animated: false)
+        mapView?.setCenter(Point, animated: false)
     }
     
-    func AddLine(crumb: Crumb){
-        var locations = Array<CLLocation>();
+    func AddLine(crumb: Path){
+        var locations = Array<Point>();
         
-        for point in crumb.Path{
+        let points = crumb.getPoints()
+        for point in points{
             locations.append(point);
             let annotation = MKPointAnnotation();
-            annotation.coordinate = point.coordinate;
-            annotation.title = String(point.coordinate.latitude)+","+String(point.coordinate.longitude);
+            annotation.coordinate = point.coordinates
+            annotation.title = crumb.title
             self.mapView?.addAnnotation(annotation);
         }
         
-        var coordinates = locations.map({(location: CLLocation) -> CLLocationCoordinate2D in return location.coordinate})
+        var coordinates = locations.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
         let polyline = MKPolyline(coordinates: &coordinates, count: locations.count)
         
         self.mapView?.add(polyline)
@@ -100,8 +99,13 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
     
     //delegate callbacks
     public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        let view = MKAnnotationView()
-        view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
-        return view;
+        if annotation is ImageAnnotation {
+            let imageA = annotation as! ImageAnnotation
+            return imageA.getPinView()
+        } else {
+            let view = MKAnnotationView()
+            view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
+            return view;
+        }
     }
 }

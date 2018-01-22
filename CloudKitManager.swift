@@ -29,13 +29,13 @@ class CloudKitManager{
         privateDB = container.privateCloudDatabase
     }
     
-    class func SavePath(_ Data: Crumb) throws {
+    class func SavePath(_ Data: Path) throws {
         try GetICloudAvailable();
         
         let record = CKRecord(recordType: "Paths");
-        record["Title"] = Data.Title as CKRecordValue?;
-        record["Description"] = Data.Description as CKRecordValue?;
-        record["Points"] = Data.Path as CKRecordValue?;
+        record["Title"] = Data.title as CKRecordValue?;
+        record["Description"] = Data.notes as CKRecordValue?;
+        record["Points"] = Data.getPoints() as CKRecordValue?;
         
         
         sharedInstance.privateDB.save(record, completionHandler:  {(results, error) -> Void in
@@ -58,8 +58,8 @@ class CloudKitManager{
     class func RemoveAllPaths() throws{
         try GetICloudAvailable();
         
-        var addRecords : [CKRecord]?
-        var modRecords : [CKRecord]?
+//        var addRecords : [CKRecord]?
+//        var modRecords : [CKRecord]?
         let container: CKContainer = CKContainer.default()
         
         var recordIDsArray: [CKRecordID] = []
@@ -82,9 +82,8 @@ class CloudKitManager{
     class func RemovePath(recordId: CKRecordID) throws{
         try GetICloudAvailable();
         
-        
-        var addRecords : [CKRecord]?
-        var modRecords : [CKRecord]?
+//        var addRecords : [CKRecord]?
+//        var modRecords : [CKRecord]?
         let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordId])
         operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in
             if(error==nil){
@@ -102,6 +101,60 @@ class CloudKitManager{
         
     }
     
+    
+    
+    class func UnsharePath(recordId: CKRecordID) throws{
+        try GetICloudAvailable();
+        
+//        var addRecords : [CKRecord]?
+//        var modRecords : [CKRecord]?
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordId])
+        operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in
+            if(error==nil){
+                sharedInstance.delegate?.CrumbDeleted((modRecords?[0])!);
+                do{
+                    try fetchPathsForUser()
+                } catch{
+                }
+            } else{
+                sharedInstance.delegate?.errorSavingData(error!)
+            }
+        }
+        
+        sharedInstance.privateDB.add(operation)
+        
+    }
+    
+    class func DeletePublicPath(recordName: String) throws{
+        try GetICloudAvailable();
+        
+        let recordID = CKRecordID(recordName: recordName);
+//        var addRecords : [CKRecord]?
+//        var modRecords : [CKRecord]?
+
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordID])
+        operation.modifyRecordsCompletionBlock = {addRecords, modRecords, error in
+            if(error==nil){
+                sharedInstance.delegate?.CrumbDeleted((modRecords?[0])!);
+                do{
+                    try fetchPathsForUser()
+                } catch{
+                }
+            } else{
+                sharedInstance.delegate?.errorSavingData(error!)
+            }
+        }
+        
+        sharedInstance.publicDB.add(operation)
+        
+    }
+    
+    class func fetchAllPaths() throws{
+        try fetchPathsForUser();
+        try fetchAllPaths();
+    }
+    
+    
     class func fetchPathsForUser() throws {
         try GetICloudAvailable();
         
@@ -117,7 +170,7 @@ class CloudKitManager{
                     {(results, error) -> Void in
                         if error != nil {
                             sharedInstance.delegate?.errorUpdatingCrumbs(error as NSError!)
-                            print("Cloud Query Error - Fetch Establishments: \(error)")
+                            print("Cloud Query Error - Fetch Establishments: \(error!.localizedDescription)")
                             
                             return
                         }
@@ -154,7 +207,7 @@ class CloudKitManager{
         sharedInstance.publicDB.perform(query, inZoneWith: nil, completionHandler: {(results, error) -> Void in
             if error != nil {
                 sharedInstance.delegate?.errorUpdatingCrumbs(error!)
-                print("Cloud Query Error - Fetch Establishments: \(error)")
+                print("Cloud Query Error - Fetch Establishments: \(error!.localizedDescription)")
                 
                 return
             }
@@ -195,7 +248,7 @@ class CloudKitManager{
                     {(results, error) -> Void in
                         if error != nil {
                             sharedInstance.delegate?.errorUpdatingCrumbs(error as NSError!)
-                            print("Cloud Query Error - Fetch Establishments: \(error)")
+                            print("Cloud Query Error - Fetch Establishments: \(error!.localizedDescription)")
                             
                             return
                         }
@@ -245,44 +298,69 @@ class CloudKitManager{
         
         try GetICloudAvailable();
         
-        let newRecord = CKRecord(recordType: "Paths");
-        for key in record.allKeys(){
-            newRecord[key] = record[key];
-        }
-        newRecord["originalRecordName"] = record.recordID.recordName as CKRecordValue?;
         
-        //record["Title"] = Data.Title as CKRecordValue?;
-        ///record["Description"] = Data.Description as CKRecordValue?;
-        //record["Points"] = Data.Path as CKRecordValue?;
         if(share){
-            sharedInstance.publicDB.save(newRecord, completionHandler:  {(results, error) -> Void in
-                
+            addPublicRecord(record);
+        } else{
+            removePublicRecord(privateRecord:record);
+        }
+    }
+    
+    class func removePublicRecord(privateRecord: CKRecord) {
+        
+        let recordName = privateRecord["publicRecordName"] as! String?;
+        
+        if let recordNameUnwrapped = recordName{
+            
+            let recordID = CKRecordID(recordName: recordNameUnwrapped)
+            sharedInstance.publicDB.delete(withRecordID: recordID, completionHandler: {(results, error) -> Void in
                 if(error==nil){
-                    print("Saved crumb "+record.recordID.recordName);
-                    sharedInstance.delegate?.CrumbSaved(results!.recordID)
+                    print("Removed public crumb " + recordNameUnwrapped)
+                    
+                    sharedInstance.delegate?.CrumbDeleted(results!)
+                    
+                    privateRecord["publicRecordName"] = nil
+                    privateRecord["IsShared"] = 0 as CKRecordValue?
                     do{
-                        record["IsShared"] = 1 as CKRecordValue?
-                        try UpdatePath(Record: record)
-                        try fetchPathsForUser();
+                    try UpdatePath(Record: privateRecord)
+                    try fetchPathsForUser();
                     } catch{
                         
                     }
                 } else{
                     sharedInstance.delegate?.errorSavingData(error!)
                 }
-            })
-            
-        }
-        else{
-            sharedInstance.publicDB.delete(withRecordID: record.recordID, completionHandler: {(results, error) -> Void in
-                do{
-                    try fetchPublicPaths()
-                } catch{
-                    
-                }
+                
             })
         }
     }
+    
+    class func addPublicRecord(_ record: CKRecord){
+        let newRecord = CKRecord(recordType: "Paths");
+        for key in record.allKeys(){
+            newRecord[key] = record[key];
+        }
+        
+        sharedInstance.publicDB.save(newRecord, completionHandler:  {(results, error) -> Void in
+            if(error==nil){
+                print("Saved crumb "+record.recordID.recordName);
+                
+                sharedInstance.delegate?.CrumbSaved(results!.recordID)
+                do{
+                    record["publicRecordName"] = results!.recordID.recordName as CKRecordValue?;
+                    record["IsShared"] = 1 as CKRecordValue?
+                    try UpdatePath(Record: record)
+                    try fetchPathsForUser();
+                } catch{
+                    
+                }
+            } else{
+                sharedInstance.delegate?.errorSavingData(error!)
+            }
+        })
+        
+    }
+    
     
     class func GetICloudAvailable() throws{
         if(AccountStatus != CKAccountStatus.available){

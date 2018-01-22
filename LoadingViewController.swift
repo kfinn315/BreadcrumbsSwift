@@ -20,23 +20,7 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        CloudKitManager.GetICloudAccountStatus(Callback: {(status: CKAccountStatus)->Void in
-            if(status == CKAccountStatus.available){
-                do{
-                    try CloudKitManager.fetchPathsForUser()
-                } catch {
-                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
-                }
-                do{
-                    try CloudKitManager.fetchPublicPaths()
-                } catch {
-                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
-                }
-             
-            } else{
-                self.ShowNextVC();
-            }
-        })
+     
       
     }
     
@@ -59,11 +43,13 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
     
     func ShowNextVC(){
         CloudKitManager.sharedInstance.delegate = nil
-        let container = self.storyboard?.instantiateViewController(withIdentifier: "Container")
-        self.modalPresentationStyle = UIModalPresentationStyle.fullScreen;
-        self.present(container!, animated: true, completion: {()->Void in
-            print("Presented container vc")
-        })
+        let container = self.storyboard?.instantiateViewController(withIdentifier: "SplitVC")
+//        self.modalPresentationStyle = UIModalPresentationStyle.fullScreen;
+        
+        if container != nil {
+            self.navigationController?.pushViewController(container!, animated: true)
+//        self.present(container!, animated: true)
+        }
     }
     
     func CrumbSaved(_ Id: CKRecordID) {

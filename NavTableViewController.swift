@@ -6,47 +6,129 @@
 //  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
+import Foundation
+import CoreData
 import UIKit
 import MapKit
 import CloudKit
 import CoreGraphics
+import RxCocoa
+import RxSwift
+import RxCoreData
+import RxDataSources
 
 class NavTableViewController: UITableViewController, CloudKitDelegate {
-    var userpaths = Array<PathsType>();
-    var sharedpaths = Array<PathsType>();
+    @IBOutlet weak var addBarButton: UIBarButtonItem!
+    var userpaths : [Path] = []
     var showHeader = false;
     var headerText = String();
-    var container : ContainerViewController?
+    
+    var isLoading = false
+    
+    var coreData = CoreDataManager()
+    
+    var managedObjectContext: NSManagedObjectContext!
+    let disposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        do{
-            try CloudKitManager.GetICloudAvailable();
-        } catch{
-            ShowInHeader("Unable to find cloudkit status")
+        tableView.dataSource = nil
+        
+        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+            managedObjectContext = appDelegate.managedObjectContext
         }
         
-        self.container = (self.parent as! ContainerViewController);
-
+        configureTableView()
+        
+        //
+        //        CloudKitManager.sharedInstance.delegate = self;
+        //        initCD()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        CloudKitManager.sharedInstance.delegate = self;
         
-        userpaths = CloudKitManager.sharedInstance.userPaths;
-        sharedpaths = CloudKitManager.sharedInstance.sharedPaths;
-        self.tableView.reloadData();
-        
-        if((AppManager.sharedInstance.SelectCrumbIndex) != nil){
-            let indexPath = AppManager.sharedInstance.SelectCrumbIndex!;
-            tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition.none)
+        if #available(iOS 11.0, *) {
+            self.navigationItem.largeTitleDisplayMode = .always
+        } else {
+            // Fallback on earlier versions
         }
         
+        if isLoading {
+            //show loading table
+        }
+    }
+    
+    func configureTableView(){
+        managedObjectContext.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
+            .bind(to:tableView.rx.items(cellIdentifier: "crumbcell")) { row, path, cell in
+                cell.textLabel?.text = path.title
+                cell.detailTextLabel?.text = path.startdate?.string ?? ""
+            }
+            .disposed(by: disposeBag)
+        
+        tableView.rx.itemSelected.map { [unowned self] ip -> Path in return try self.tableView.rx.model(at: ip)
+            }.subscribe(onNext: { [unowned self] (path) in
+                do {
+                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "pathDetail") as? PathDetailViewController
+                    {
+                        vc.path = path
+                        self.showDetailViewController(vc, sender: self)
+                    }
+                }
+            }).disposed(by: disposeBag)
+        
+        
+        self.tableView.rx.itemDeleted.map { [unowned self] ip -> Path in
+            return try self.tableView.rx.model(at: ip)
+            }
+            .subscribe(onNext: { [unowned self] (path) in
+                do {
+                    try self.managedObjectContext.rx.delete(path)
+                } catch {
+                    print(error)
+                }
+            })
+            .disposed(by: disposeBag)
         
     }
+    
+    private func reloadData(){
+        do{
+            userpaths = try coreData.getPaths()
+        } catch{
+            
+        }
+        
+        DispatchQueue.main.async {
+            self.tableView.reloadData();
+        }
+    }
+    
+    private func initCD(){
+        isLoading = true
+        CloudKitManager.GetICloudAccountStatus(Callback: {(status: CKAccountStatus)->Void in
+            if(status == CKAccountStatus.available){
+                do{
+                    try CloudKitManager.fetchPathsForUser()
+                } catch {
+                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
+                }
+                do{
+                    try CloudKitManager.fetchPublicPaths()
+                } catch {
+                    //showErrorAlert(title: "CloudKit Error", message: "", Error: error)
+                }
+                
+            } else{
+                //error
+            }
+        })
+    }
+    
     private var showPublic = true;
+    
     func togglePublic(){
         showPublic = !showPublic;
         
@@ -84,164 +166,20 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
         return view;
     }
     
-    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView?
-    {
-        let  headerCell = tableView.dequeueReusableCell(withIdentifier: "headercell") as! HeaderCell
-        headerCell.backgroundColor = UIColor.cyan
-        
-        
-        switch(section){
-        case 0:
-            headerCell.textLabel?.text = "My Paths!";
-        case 1:
-            headerCell.textLabel?.text = "Shared Paths";
-        default:
-            headerCell.textLabel?.text = "Other";
-            break;
-        }
-        
-        
-        return headerCell;
-        
-    }
-    
-    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        
-        var title : String;
-        switch(section){
-        case 0:
-            title = "My Paths!";
-        case 1:
-            title = "Shared Paths";
-        default:
-            title = "Other";
-            break;
-        }
-        
-        return title;
-    }
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        
-        var path : PathsType?
-        
-        if(indexPath.section == 0){
-            path = userpaths[indexPath.row];
-        } else if(indexPath.section == 1){
-            path = sharedpaths[indexPath.row];
-        }
-        
-        container?.SetMainCrumb(path: path)
-        container?.closeLeft()
-        
-        tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition.none)
-        
-    }
-    
-    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        if(indexPath == AppManager.sharedInstance.SelectCrumbIndex)
-        {
-            AppManager.sharedInstance.SelectCrumbIndex = nil;
-        }
-    }
-    
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return true
-    }
-    
-    override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
-        let edit = UITableViewRowAction(style: .normal, title: "Edit") { action, index in
-            print("edit button tapped")
-            tableView.setEditing(false, animated: true)
-            //show edit modal
-            
-            
-            let EVC = self.storyboard?.instantiateViewController(withIdentifier: "editVC") as! EditViewController
-            EVC.Crumb = self.userpaths[index.row];
-            self.present(EVC, animated: true, completion: nil)
-        }
-        edit.backgroundColor = UIColor.lightGray
-        
-        let delete = UITableViewRowAction(style: .normal, title: "Delete") { action, index in
-            print("delete button tapped")
-            tableView.setEditing(false, animated: true)
-            //show delete confirm
-            let alert = UIAlertController.init(title: "Delete Crumb?", message: "Are you sure you want to permanently delete this Crumb?", preferredStyle: UIAlertControllerStyle.alert);
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: {(UIAlertAction)-> Void in
-                tableView.setEditing(false, animated: true)
-                let remove = self.userpaths[index.row];
-                do{
-                    try CloudKitManager.RemovePath(recordId: (remove.Record?.recordID)!)
-                } catch{
-                    //do something
-                }
-            }
-            ));
-            alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: {(UIAlertAction)-> Void in
-                tableView.setEditing(false, animated: true)
-            }))
-            self.present(alert, animated: true, completion:  nil)
-        }
-        delete.backgroundColor = UIColor.orange
-        
-        let share = UITableViewRowAction(style: .normal, title: "Share") { action, index in
-            print("share button tapped")
-            tableView.setEditing(false, animated: true)
-            //show share modal
-        }
-        share.backgroundColor = UIColor.blue
-        
-        return [edit, delete, share ]
-    }
-    
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if(section == 0){
-            return userpaths.count;
-        }
-        else if(section == 1) {
-            return sharedpaths.count;
-        }
-        
-        return 0;
-    }
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2;
-    }
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        var paths : Array<PathsType>?;
-        if(indexPath.section==0){
-            paths = userpaths;
-        } else if(indexPath.section == 1){
-            paths = sharedpaths;
-        }
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "crumbcell", for: indexPath)
-        
-        if let pathsUnwrapped = paths {
-            let path = pathsUnwrapped[indexPath.row];
-            cell.textLabel?.text = path.GetTitle();
-            cell.detailTextLabel?.text =  path.GetUserName();
-            if(path.GetIsShared()){
-                cell.backgroundColor = UIColor.yellow;
-            } else{
-                cell.backgroundColor = UIColor.clear;
-            }
-        }
-        return cell
-    }
-    
+    //CloudKitDelegate
     func errorUpdatingCrumbs(_ Error: Error) {
-        
+        self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
     }
     func errorSavingData(_ Error: Error) {
-        
+        self.present(UIAlertController(title: "Error Updating", message: "Failed to Update: "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
+    }
+    
+    func showErrorAlert(title: String, message: String, Error: Error) {
+        self.present(UIAlertController(title: title, message: message+": "+Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), animated: true)
     }
     
     func CrumbsUpdated(_ Crumbs: Array<PathsType>){
-        userpaths = Crumbs;
-        self.tableView.reloadData();
+        reloadData()
     }
     
     func CrumbSaved(_ Id: CKRecordID) {
@@ -256,4 +194,5 @@ class NavTableViewController: UITableViewController, CloudKitDelegate {
     }
     
 }
+
 
