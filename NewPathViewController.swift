@@ -16,11 +16,11 @@ import RxSwift
 
 public class NewPathViewController : UITableViewController, CLLocationManagerDelegate, CrumbsDelegate {
     var LocationManager = CoreLocationManager()
-    var crumbsManager = CrumbsManager()
+    var crumbsManager : CrumbsManager?
     var SaveAlert : UIAlertController?
     var recording = false
     var disposeBag = DisposeBag()
-    var path : Path?
+    //var path : Path?
     var startTime : Date?
     var stopTime : Date?
     
@@ -30,6 +30,8 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
     @IBOutlet weak var tfNotes: UITextField!
     public override func viewDidLoad() {
         super.viewDidLoad()
+        
+        crumbsManager = CrumbsManager.shared
         
         self.SaveAlert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
         let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonSaveClicked()})
@@ -43,11 +45,8 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
                 //this is called when there's a new location
                 print("location manager didUpdateLocations");
                 
-                do{
-                    try self.crumbsManager.addPointToData(Point.from(cllocation))
-                } catch{
-                    print("error "+error.localizedDescription)
-                }
+                self.crumbsManager!.addPointToData(Point.from(cllocation))
+                
             }).disposed(by: disposeBag)
     }
     
@@ -58,7 +57,7 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
         recording = false
         
         //LocationManager.delegate = self;
-        crumbsManager.delegate = self;
+        crumbsManager?.delegate = self;
         
         if LocationManager.updatesAreOn() {
             recording = true
@@ -73,20 +72,13 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
             // Fallback on earlier versions
         }
         
-        if path != nil {
-            tfTitle.text = path?.title
-            tfNotes.text = path?.notes
-        }
+        tableView.reloadData()
     }
     
     func buttonSaveClicked(){
         LocationManager.stopLocationUpdates();
         
-        do{
-            try crumbsManager.SaveCurrentPath(start: startTime, end: stopTime, title: tfTitle.text ?? "", description: tfNotes.text );
-        } catch{
-            //show error
-        }
+        crumbsManager!.SaveNewPath(start: startTime, end: stopTime, title: tfTitle.text ?? "", description: tfNotes.text );
     }
     
     func buttonDoneClicked(){
@@ -118,21 +110,14 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
     private func startUpdating(){
         recording = true
         btnRecord.setTitle("Stop", for: .normal)
-        do{
-            try crumbsManager.clearPoints()
-        } catch{
-            //show error
-        }
+        
+        crumbsManager!.clearPoints()
         
         LocationManager.startLocationUpdates();
     }
     
     func buttonResetClicked(){
-        do{
-            try crumbsManager.clearPoints();
-        } catch{
-            //show error
-        }
+       crumbsManager!.clearPoints();        
     }
     
     //delegate callbacks

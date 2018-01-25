@@ -15,7 +15,7 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
     
     override func viewWillAppear(_ animated: Bool) {
 
-        CloudKitManager.sharedInstance.delegate = self
+        //CloudKitManager.sharedInstance.delegate = self
     
     }
     
@@ -42,7 +42,7 @@ class LoadingViewController : UIViewController, CloudKitDelegate{
     }
     
     func ShowNextVC(){
-        CloudKitManager.sharedInstance.delegate = nil
+        //CloudKitManager.sharedInstance.delegate = nil
         let container = self.storyboard?.instantiateViewController(withIdentifier: "SplitVC")
 //        self.modalPresentationStyle = UIModalPresentationStyle.fullScreen;
         

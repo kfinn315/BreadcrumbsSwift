@@ -51,16 +51,15 @@ public class AlbumsTableViewController : UITableViewController {
         }
         
         let container = data[indexPath.row]
-        let asset = container.asset
-        
         cell.textLabel?.text = container.collection.localizedTitle
 
-        if asset != nil {
-        cell.tag = Int(manager.requestImage(for: asset!,
+        if container.asset != nil {
+        cell.tag = Int(manager.requestImage(for: container.asset!,
                                             targetSize: CGSize(width: 100.0, height: 100.0),
                                             contentMode: .aspectFill,
-                                            options: nil) { (result, _) in
+                                            options: nil) { [weak self] (result, _) in
                                                 if let destinationCell = tableView.cellForRow(at: indexPath) {
+                                                    self?.data[indexPath.row].thumbnail = result
                                                     destinationCell.imageView?.image = result
                                                     destinationCell.setNeedsLayout()
                                                 }
@@ -72,33 +71,17 @@ public class AlbumsTableViewController : UITableViewController {
     
     public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         var vcs =  self.navigationController?.viewControllers
+        
         guard vcs != nil else{ return }
+        
         _ = vcs!.popLast()
-        if let vc = vcs!.last as? PathDetailViewController {
-            var album = data[indexPath.row]
-            vc.path?.albumData = album
-            if album.thumbnail == nil {
-                if let thumbnail = tableView.cellForRow(at: indexPath)?.imageView?.image{
-                    album.thumbnail = thumbnail
-                }
-            }
+        
+        if vcs!.last is PathDetailViewController {
+                let album = self.data[indexPath.row]
+                _ = CrumbsManager.shared.UpdateCurrentAlbum(collection: album)
         }
         
         navigationController?.setViewControllers(vcs!, animated: true)
     }
-    //    private func downloadAndSetImage(asset: AssetContainer) {
-    //        if asset.thumbnail == nil {
-    //            let imageRequestOptions = PHImageRequestOptions()
-    //            imageRequestOptions.isNetworkAccessAllowed = false
-    //            imageRequestOptions.isSynchronous = true
-    //            imageRequestOptions.deliveryMode = .highQualityFormat
-    //
-    //            PHImageManager.default().requestImage(for: asset.asset.first, targetSize: self.targetImageSize(), contentMode: .AspectFit, options: imageRequestOptions, resultHandler: { (img, info) -> Void in
-    //                    asset.thumbnail = img
-    //                    self.albumImage.image = asset.thumbnail
-    //            })
-    //        } else {
-    //            albumImage.image = asset.thumbnail
-    //        }
-    //    }
+
 }

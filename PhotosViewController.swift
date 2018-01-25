@@ -34,7 +34,7 @@ class PhotosViewController: UICollectionViewController {
         if var vcs = self.navigationController?.viewControllers {
             _ = vcs.popLast()
             if let detailvc = vcs.last as? PathDetailViewController {
-                detailvc.path?.albumData = nil
+                CrumbsManager.shared.currentPath?.albumData = nil
             }
             
             self.navigationController?.setViewControllers(vcs, animated: true)

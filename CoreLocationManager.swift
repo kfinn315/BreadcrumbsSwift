@@ -31,7 +31,6 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
 //        }
 //
         locationManager.delegate = nil
-
         
         weak var weakLocationManager = locationManager
         authorized = Observable.deferred{
@@ -76,49 +75,15 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
             locationManager.stopMonitoringSignificantLocationChanges();
         }
     }
-//
-//    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-//        print("Manager did change auth status to "+String(describing: status))
-//        if(CLLocationManager.locationServicesEnabled()){
-//            locationManager = manager;
-//            startUpdatingLocation()
-//        }
-//    }
-    
+
     func startLocationUpdates() {
         print("start Location Updates()")
         locationManager.startUpdatingLocation()
-//
-//        if(LocationSettings.backgroundLocationUpdatesOn){
-//            allowsBackgroundLocationUpdates = true;
-//        }
-//        let authStatus = CLLocationManager.authorizationStatus();
-//        print("CLLocationManager auth status = "+String(describing: authStatus))
-//        if(authStatus != CLAuthorizationStatus.authorizedAlways && authStatus != CLAuthorizationStatus.authorizedWhenInUse){
-//            requestWhenInUseAuthorization();
-//            print("CL RequestWhenInUseAuthorization()")
-//        } else{
-//            //CoreLocationManager.LManager.requestLocation();
-//            if(CLLocationManager.locationServicesEnabled()){
-//                if(LocationSettings.significantUpdatesOn){
-//                    startMonitoringSignificantLocationChanges();
-//                }
-//                else{
-//                    startUpdatingLocation()
-//                }
-//                updating = true;
-//                delegate?.didStartLocationUpdates();
-//            }
-//            else{
-//                print("Location services enabled? FALSE")
-//            }
-//        }
     }
     
     func updatesAreOn() -> Bool{
         return updating;
-    }
-    
+    }    
     
     func stopLocationUpdates(){
         locationManager.allowsBackgroundLocationUpdates = false;
@@ -129,16 +94,4 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         updating = false;
         delegate?.didStopLocationUpdates();
     }
-//
-//    func locationManager(_ manager: CLLocationManager,
-//                         didUpdateLocations locations: [CLLocation]) {
-//        print("location manager didUpdateLocations");
-//
-//        (delegate)?.didUpdateLocations(manager: CoreLocationManager.LManager!, locations: locations);
-//    }
-//
-//    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-//        print("location manager error \(error)");
-//    }
-    
 }

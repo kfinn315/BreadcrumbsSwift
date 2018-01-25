@@ -11,201 +11,229 @@ import CoreData
 import CoreLocation
 import UIKit
 
-class CoreDataManager{
-    var points : [NSManagedObject] = [];
-    var managedObjectContext : NSManagedObjectContext?
+class CoreDataManager {
+    var container : NSPersistentContainer?
+    //var managedObjectContext : NSManagedObjectContext?
     
     init(){
-        DispatchQueue.main.async {
-            if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-                self.managedObjectContext = appDelegate.managedObjectContext
-            }
+        //        DispatchQueue.main.async {
+        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+            self.container = appDelegate.persistentContainer
+            //self.managedObjectContext = appDelegate.managedObjectContext
         }
+        //        }
     }
+}
+class PointsManager : CoreDataManager {
+    //var points : [NSManagedObject] = [];
     
-    //save all points to a path
-    func savePath(_ path: Path) {
-        //let points = try fetchPoints()
+    func savePoint(_ point: Point) {
+        print("savePoint")
         
-        //path.Points = points
-
-        if managedObjectContext != nil, let entity = NSEntityDescription.entity(forEntityName: "Path", in: managedObjectContext!) {
-            let pEntity = NSManagedObject(entity: entity, insertInto: managedObjectContext!)
+        guard container != nil else {
+            return
+        }
+        
+        container?.performBackgroundTask({ (context) in
+            let entity = NSEntityDescription.entity(forEntityName: "Point", in: context)!
             
-            pEntity.setValue(path.id ?? path.startdate?.description ?? Date().description, forKeyPath: "id")
-            pEntity.setValue(path.startdate, forKeyPath: "startdate")
-            pEntity.setValue(path.enddate, forKeyPath: "enddate")
-            pEntity.setValue(path.notes, forKey: "notes")
-            pEntity.setValue(path.distance, forKey: "distance")
-            pEntity.setValue(path.distance, forKey: "stepcount")
-            pEntity.setValue(path.duration, forKey: "duration")
-            pEntity.setValue(path.locations, forKey: "locations")
-            pEntity.setValue(path.title, forKey: "title")
-            pEntity.setValue(path.pointsJSON, forKey: "pointsJSON")
-
-            if managedObjectContext!.hasChanges{                
+            let mopoint = NSManagedObject(entity: entity, insertInto: context)
+            mopoint.setValue(point.id, forKey: "id")
+            mopoint.setValue(point.latitude, forKeyPath: "latitude")
+            mopoint.setValue(point.longitude, forKeyPath: "longitude")
+            mopoint.setValue(point.timestamp, forKeyPath: "timestamp")
+            
+            if context.hasChanges {
                 do{
-                    try managedObjectContext!.save()
+                    try context.save()
                 } catch{
-                    print("error "+error.localizedDescription)
+                    print("error \(error)")
                 }
             }
-        }
+        })
     }
     
-    func getPaths() throws -> [Path] {
-        let pathsCD = try getPathsCD()
-        
-        var paths : [Path] = []
-        
-        if pathsCD != nil {
-            for pathData in pathsCD! {
-                let path = Path(entity: pathData)
-//                wrapper.path.pointsJSON = pathData.value(forKey: "pointsJSON") as? String
-//                wrapper.path.date = pathData.value(forKey: "date") as? Date!
-//                wrapper.path.title = pathData.value(forKey: "title") as? String
-//                wrapper.path.notes = pathData.value(forKey: "notes") as? String
-//                wrapper.path.distance  = pathData.value(forKey: "distance") as? Float
-//                wrapper.path.duration = pathData.value(forKey: "duration") as? Float
-//                wrapper.path.locations = pathData.value(forKey: "locations") as? String
-//
-                paths.append(path)
-            }
-            
-        }
-     
-        return paths
-    }
-    private func getPathsCD() throws -> [NSManagedObject]?{
-        guard managedObjectContext != nil else{
-            return nil
-        }
-
-        let fetchRequest =
-            NSFetchRequest<NSManagedObject>(entityName: "Path")
-        
-        let managedPaths = try managedObjectContext!.fetch(fetchRequest)
-        
-        return managedPaths
-    }
-    func savePoint(_ point: Point) throws {
-        print("savePoint")
-
-        guard managedObjectContext != nil else {
-            return
-        }
-
-        // 2
-        let entity = NSEntityDescription.entity(forEntityName: "Point", in: managedObjectContext!)!
-        
-        let mopoint = NSManagedObject(entity: entity,
-                                    insertInto: managedObjectContext!)
-        
-        // 3
-        mopoint.setValue(point.id, forKey: "id")
-        mopoint.setValue(point.latitude, forKeyPath: "latitude")
-        mopoint.setValue(point.longitude, forKeyPath: "longitude")
-        mopoint.setValue(point.timestamp, forKeyPath: "timestamp")
-        // 4
-        
-        if(managedObjectContext?.hasChanges)!{
-            try managedObjectContext?.save()
-        }
-
-        points.append(mopoint)
-//        print("append saved point ("+String(latitude)+","+String(longitude)+","+String(describing: timestamp)+")to points")
-    }
-    
-    func clearPoints() throws{
+    func clearPoints() {
         print("clearPoints");
         
-        guard managedObjectContext != nil else {
+        guard container != nil else {
             return
         }
-
-        for point in points {
-            managedObjectContext!.delete(point)
-        }
         
-        if managedObjectContext!.hasChanges {
-            try managedObjectContext!.save();
-        }
+        container?.performBackgroundTask({ (context) in
+            let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: "Point")
+            let request = NSBatchDeleteRequest(fetchRequest: fetch)
+            
+            do{
+                try context.execute(request)
+            } catch{
+                print("error \(error)")
+            }
+            
+        })
+        //        points.removeAll()
     }
     
-    func fetchPoints() throws -> Array<Point> {
-        var data : [NSManagedObject]?
-        
-        data = try fetchPointsCD()
-        
+    func fetchPoints() -> Array<Point> {
         var points = Array<Point>();
-
-        if data != nil {
-        // currentPath.removeAll()
-        for point in data! {
-            let lat = point.value(forKey: "latitude") as! Double
-            let long = point.value(forKey: "longitude") as! Double
-            let time = point.value(forKey: "timestamp") as! NSDate
-            let id = point.value(forKey: "id") as? String ?? time.description
-//            let clLat = CLLocationDegrees(lat)
-//            let clLong = CLLocationDegrees(long)
-//            
-            points.append(Point(id: id, lat: lat, lng: long, time: time))
-            
+        
+        print("fetchPoints -> fetching points");
+        
+        guard container != nil else {
+            return []
         }
-
+        
+        container!.performBackgroundTask { (context) in
+            var mojs : [NSManagedObject] = []
+            
+            let fetchRequest = NSFetchRequest<Point>(entityName: "Point")
+            
+            do{
+                mojs = try context.fetch(fetchRequest)
+            } catch{
+                print("error \(error)")
+            }
+            
+            print("fetched "+String(describing: points.count)+" points")
+            
+            for point in mojs {
+                let lat = point.value(forKey: "latitude") as! Double
+                let long = point.value(forKey: "longitude") as! Double
+                let time = point.value(forKey: "timestamp") as! NSDate
+                let id = point.value(forKey: "id") as? String ?? time.description
+                points.append(Point(id: id, lat: lat, lng: long, time: time))
+            }
         }
         
         return points
     }
-    
-    private func fetchPointsCD() throws -> [NSManagedObject]?{
-        print("fetchPoints -> fetching points");
-        
-        guard managedObjectContext != nil else {
-            return nil
+}
+class PathsManager : CoreDataManager {
+    //save all points to a path
+    func savePath(_ path: Path) {
+        guard container != nil else {
+            return
         }
-
-        let fetchRequest =
-            NSFetchRequest<NSManagedObject>(entityName: "Point")
         
-        points = try managedObjectContext!.fetch(fetchRequest)
-        
-        print("fetched "+String(describing: points.count)+" points")
-        
-        return points;
+        container!.performBackgroundTask { (context) in
+            do{
+                
+                if let entity = NSEntityDescription.entity(forEntityName: "Path", in: context) {
+                    let pEntity = NSManagedObject(entity: entity, insertInto: context)
+                    pEntity.setValue(path.id ?? path.startdate?.description ?? Date().description, forKeyPath: "id")
+                    pEntity.setValue(path.startdate, forKeyPath: "startdate")
+                    pEntity.setValue(path.enddate, forKeyPath: "enddate")
+                    pEntity.setValue(path.notes, forKey: "notes")
+                    pEntity.setValue(path.distance, forKey: "distance")
+                    pEntity.setValue(path.distance, forKey: "stepcount")
+                    pEntity.setValue(path.duration, forKey: "duration")
+                    pEntity.setValue(path.locations, forKey: "locations")
+                    pEntity.setValue(path.title, forKey: "title")
+                    pEntity.setValue(path.pointsJSON, forKey: "pointsJSON")
+                }
+                
+                if context.hasChanges{
+                    try context.save()
+                }
+            } catch{
+                print("error \(error)")
+            }
+        }
     }
     
-
-    private func GetManagedObjectContext() -> NSManagedObjectContext?{
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+    func getPath(_ id: String) -> Path? {
+        var path : Path?
+        
+        guard container != nil else {
             return nil
         }
-
-        var managedContext : NSManagedObjectContext?
-
-        if #available(iOS 10.0, *) {
-            managedContext = appDelegate.managedObjectContext
-        } else {
-            // iOS 9.0 and below
-            guard let modelURL = Bundle.main.url(forResource: "Model", withExtension:"momd") else {
-                fatalError("Error loading model from bundle")
+        
+        container!.performBackgroundTask { (context) in
+            do{
+                let fetchRequest = NSFetchRequest<Path>(entityName: "Path")
+                fetchRequest.predicate = NSPredicate(format: "id = %@", id)
+                fetchRequest.fetchLimit = 1
+                
+                path = try context.fetch(fetchRequest).first
+            } catch{
+                print("error \(error)")
             }
-            guard let mom = NSManagedObjectModel(contentsOf: modelURL) else {
-                fatalError("Error initializing mom from: \(modelURL)")
-            }
-            let psc = NSPersistentStoreCoordinator(managedObjectModel: mom)
-            managedContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-            let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-            let docURL = urls[urls.endIndex-1]
-            let storeURL = docURL.appendingPathComponent("Model.sqlite")
-            do {
-                try psc.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: nil)
-            } catch {
-                fatalError("Error migrating store: \(error)")
-            }
-
         }
         
-        return managedContext;
+        return path
+    }
+    
+    func getPaths() throws -> [Path] {
+        var paths : [Path] = []
+        
+        guard container != nil else{
+            return []
+        }
+        
+        container!.performBackgroundTask { (context) in
+            do{
+                let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "Path")
+                
+                let mojs = try context.fetch(fetchRequest)
+                
+                for pathData in mojs {
+                    let path = Path(entity: pathData)
+                    paths.append(path)
+                }
+            } catch{
+                print("error \(error)")
+            }
+        }
+        
+        return paths
+    }
+    
+    func updatePath(id: String, properties: [AnyHashable : Any]) -> Int{
+        var changeCount = 0
+        
+        guard container != nil else{
+            return 0
+        }
+        
+        container!.performBackgroundTask { (context) in
+            do{
+                let request = NSBatchUpdateRequest(entityName: "Path")
+                request.propertiesToUpdate = properties
+                request.predicate = NSPredicate(format: "id = %@", id)
+                request.resultType = NSBatchUpdateRequestResultType.updatedObjectIDsResultType
+                
+                let resObject = try context.execute(request)
+                
+                if let result = resObject as? NSBatchUpdateResult, let updatedIds = result.result  as? [NSManagedObjectID] {
+                    
+                    if updatedIds.count > 0 {
+                        for objectID in updatedIds {
+                            let managedObject = context.object(with: objectID)
+                            context.refresh(managedObject, mergeChanges: false)
+                        }
+                    }
+                    
+                    changeCount = updatedIds.count
+                }
+            } catch{
+                print("error \(error)")
+            }
+        }
+        
+        return changeCount
+    }
+    
+    func updatePath(_ path: Path) -> Int{
+        var props : [AnyHashable : Any] = ["title":path.title ?? "", "notes":path.notes ?? "", "locations":path.locations ?? ""]
+        
+        if let startdate = path.startdate {
+            props["startdate"] = startdate
+        }
+        
+        if let enddate = path.enddate {
+            props["enddate"] = enddate
+        }
+        
+        return updatePath(id: path.id!, properties: props)
     }
 }

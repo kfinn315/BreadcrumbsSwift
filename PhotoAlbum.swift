@@ -3,7 +3,6 @@
 //  BreadcrumbsSwift
 //
 //  Created by Kevin Finn on 1/18/18.
-//  Copyright © 2018 Kevin Finn. All rights reserved.
 //
 
 import Foundation
@@ -76,10 +75,15 @@ class PhotoAlbum: NSObject {
     
     func addPhotosInTimespan(start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?)->(Void) ){
         PHPhotoLibrary.shared().performChanges({
+            guard self.assetCollection != nil else {
+                print("error asset collection is nil")
+                return
+            }
+            
+            let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection!)
             let opts = PHFetchOptions()
             opts.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@", start as NSDate, end as NSDate)
             let fetchresult = PHAsset.fetchAssets(with: .image, options: opts)
-            let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection)
             albumChangeRequest?.addAssets(fetchresult)
         }, completionHandler: { (success, error) in
             if error !=  nil {

@@ -3,7 +3,6 @@
 //  BreadcrumbsSwift
 //
 //  Created by Kevin Finn on 5/23/17.
-//  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
 import Foundation

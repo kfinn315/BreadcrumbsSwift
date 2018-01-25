@@ -9,24 +9,16 @@
 import Foundation
 import CoreLocation
 
-extension NSDate{
-    
+extension NSDate{    
     var string: String{
         let dateFormatter = DateFormatter();
         dateFormatter.dateFormat = "MM/dd/YY hh:mm"
         return dateFormatter.string(from: self as Date)
     }
-
 }
 
-
-
 extension Date{
-    
     var datestring: String{
-        let dateFormatter = DateFormatter();
-        dateFormatter.dateFormat = "MM/dd/YY"
-        return dateFormatter.string(from: self as Date)
+        return (self as NSDate).string
     }
-    
 }

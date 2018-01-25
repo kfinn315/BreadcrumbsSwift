@@ -13,6 +13,18 @@ import RxCoreData
 
 @objc(Path)
 public class Path: NSManagedObject, Persistable, IdentifiableType {
+    @NSManaged public var id: String?
+    @NSManaged public var title: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var startdate: NSDate?
+    @NSManaged public var enddate: NSDate?
+    @NSManaged public var duration: Float
+    @NSManaged public var stepcount : NSNumber?
+    @NSManaged public var distance: Double
+    @NSManaged public var locations: String?
+    @NSManaged public var pointsJSON: String?
+    @NSManaged public var albumId : String?
+    
     var entitydescription : NSEntityDescription{
         return NSEntityDescription.entity(forEntityName: "Path", in: ((UIApplication.shared.delegate as? AppDelegate)?.managedObjectContext)!)!
     }
@@ -34,19 +46,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
     @nonobjc public class func fetchRequest() -> NSFetchRequest<Path> {
         return NSFetchRequest<Path>(entityName: "Path")
     }
-    
-    @NSManaged public var id: String?
-    @NSManaged public var title: String?
-    @NSManaged public var notes: String?
-    @NSManaged public var startdate: NSDate?
-    @NSManaged public var enddate: NSDate?
-    @NSManaged public var duration: Float
-    @NSManaged public var stepcount : NSNumber?
-    @NSManaged public var distance: Double
-    @NSManaged public var locations: String?
-    @NSManaged public var pointsJSON: String?
-    @NSManaged public var albumId : String?
-    
+   
     private var _albumdata : PhotoCollection? 
     public var albumData : PhotoCollection? {
         get {

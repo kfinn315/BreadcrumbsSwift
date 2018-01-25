@@ -59,9 +59,7 @@ class MapViewController: UIViewController, CloudKitDelegate {
         AddLine(crumb: path);
         mapManager?.ZoomToFit();
         
-        CrumbsManager.CurrentCrumb = path;
-        
-
+        //CrumbsManager.shared.currentPath = path;
     }
     
     func ClearMap(){
