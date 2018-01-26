@@ -16,10 +16,12 @@
     class CrumbsManager: NSObject {//}, CloudKitDelegate {
         var pathsManager = PathsManager();
         var pointsManager = PointsManager();
-        var delegate : CrumbsDelegate?;
+        weak var delegate : CrumbsDelegate?;
         var pedometer = CMPedometer()
         
         var currentPath : Path?
+        
+        var managedObjectContext : NSManagedObjectContext?
         
         private static var _shared : CrumbsManager?
         class var shared : CrumbsManager {
@@ -32,77 +34,73 @@
         
         private override init() {
             super.init();
+            
+            if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+                self.managedObjectContext = appDelegate.managedObjectContext
+            }
         }
         
-        func UpdateCurrentAlbum(collection: PhotoCollection) -> Int{
-            guard currentPath != nil, currentPath!.id != nil else{ return -1 }
+        func UpdateCurrentAlbum(collection: PhotoCollection) {
+            guard currentPath != nil, currentPath!.id != nil else{ return }
             
             currentPath?.albumData = collection
-            return UpdateCurrentPath(albumid: collection.id)
+            UpdateCurrentPath(albumid: collection.id)
         }
         
         //returns number of paths updated
-        private func UpdateCurrentPath(albumid: String) -> Int{
-            guard currentPath != nil, currentPath!.id != nil else{ return -1 }
+        private func UpdateCurrentPath(albumid: String) {
+            guard currentPath != nil, currentPath!.id != nil else{
+                return
+            }
 
             let propUpdates : [AnyHashable:Any] = ["albumId": albumid]
                 
-                let count = pathsManager.updatePath(id: currentPath!.id!, properties: propUpdates)
-                if let id = currentPath?.id {
-                    currentPath = pathsManager.getPath(id)
+            pathsManager.updatePath(id: currentPath!.id!, properties: propUpdates, callback: {
+                [weak self] count in
+                
+                DispatchQueue.main.async{
+                    self?.delegate?.CrumbsUpdated?()
                 }
-                return count
+            })
         }
         
         //returns number of paths updated
-        func UpdateCurrentPath() -> Int{
-            guard currentPath != nil, currentPath!.id != nil else{ return -1 }
+        func UpdateCurrentPath() {
+            guard currentPath != nil, currentPath!.id != nil else{ return }
             
-                let count = pathsManager.updatePath(currentPath!)
-                if let id = currentPath?.id {
-                    currentPath = pathsManager.getPath(id)
+            pathsManager.updatePath(currentPath!, callback: { [weak self] count in
+                if self != nil, let id = self?.currentPath?.id {
+                    self?.currentPath = self?.pathsManager.getPath(id)
                 }
-                return count
+                DispatchQueue.main.async{
+                    self?.delegate?.CrumbsUpdated?()
+                }
+            })
         }
         
-        func SaveNewPath(start: Date?, end: Date?, title: String, description: String?) {
-            let points = pointsManager.fetchPoints();
-            let path = Path()
+        func SaveNewPath(start: Date, end: Date, title: String, notes: String?) {
+            var stepcount : Int64 = 0
+            var distance : Double = 0.0
             
-            do{
-                path.pointsJSON = String(data: try JSONEncoder().encode(points), encoding: .utf8)
-            }
-            catch{
-                print("error "+error.localizedDescription)
-            }
-            path.title = title
-            path.notes = description ?? ""
-            
-            if start != nil, end != nil {
-                path.startdate = start! as NSDate
-                path.enddate = end! as NSDate
-                
-                getSteps(start!, end!, callback: { (data, error) -> (Void) in
-                    if error == nil {
-                        if data != nil {
-                            print("steps: \(data!.numberOfSteps)")
-                            print("est distance: \(data!.distance ?? 0)")
-                            path.stepcount = data!.numberOfSteps
-                            path.distance = data!.distance?.doubleValue ?? 0
-                        } else {
-                            print("step data is nil")
-                        }
+                getSteps(start, end, callback: { (data, error) -> (Void) in
+                    if error == nil, let stepdata = data {
+                            print("steps: \(stepdata.numberOfSteps)")
+                            print("est distance: \(stepdata.distance ?? 0)")
+                            stepcount = Int64(stepdata.numberOfSteps)
+                            distance = stepdata.distance?.doubleValue ?? 0
+                    } else {
+                        print(String(describing: error))
                     }
-                    else {
-                        print("error "+error!.localizedDescription)
-                    }
-                    
-                    self.pathsManager.savePath(path)
                 })
-            } else{
-                pathsManager.savePath(path)
-            }
+            
+            pathsManager.savePath(start: start, end: end, title: title, notes: notes, steps: stepcount, distance: distance, callback: {
+                [weak self] error in
+                DispatchQueue.main.async{
+                    self?.delegate?.CrumbSaved?(error: error)
+                }
+            })
         }
+    
         private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {
             guard CMPedometer.isStepCountingAvailable() else{
                 callback(nil, LocalError.failed(message: "step counting is not available"))
@@ -114,7 +112,7 @@
             return
         }
         
-        func addPointToData(_ point: Point) {
+        func addPointToData(_ point: LocalPoint) {
             print("append point");
             
             pointsManager.savePoint(point)

@@ -9,19 +9,20 @@
 import Foundation
 import CloudKit
 
+@objc
 protocol CloudKitDelegate: class {
     
-    func CrumbSaved(_ Id: CKRecordID);
+    @objc optional func CrumbSaved(_ Id: CKRecordID);
     
     //func CrumbsLoaded(_ Crumbs: Array<PathsType>);
     
-    func CrumbsReset() throws;
+    @objc optional func CrumbsReset() throws;
     
-    func CrumbDeleted(_ RecordID: CKRecordID);
+    @objc optional func CrumbDeleted(_ RecordID: CKRecordID);
     
-    func errorUpdatingCrumbs(_ Error: Error);
+    @objc optional func errorUpdatingCrumbs(_ Error: Error);
     
-    func errorSavingData(_ Error: Error);
+    @objc optional func errorSavingData(_ Error: Error);
     
-    func CrumbsUpdated(_ Crumbs: Array<PathsType>);
+    @objc optional func CrumbsUpdated()
 }

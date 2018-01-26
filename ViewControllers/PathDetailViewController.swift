@@ -20,7 +20,6 @@ public class PathDetailViewController : UITableViewController {
     var crumbsManager : CrumbsManager?
     private weak var path : Path?
     var mapManager : MapViewManager?
-    // var library : ALAssetsLibrary? = ALAssetsLibrary()
     
     public var albumImg : UIImage?
     public var albumAssets : PhotoCollection?
@@ -125,16 +124,7 @@ public class PathDetailViewController : UITableViewController {
             if let albumData = mypath.albumData {
                 lblAlbum.text = "Album \(albumData.collection.localizedTitle ?? "unknown")"
                 
-                if let image = albumData.thumbnail {
-                    ivAlbum.image = image
-                } else if albumData.asset != nil{
-                    PHImageManager.default().requestImage(for: albumData.asset!, resultHandler: { (img, dict) in
-                        mypath.albumData?.thumbnail = img
-                        self.ivAlbum.image = img
-                    })
-                } else{
-                    self.ivAlbum.image = nil
-                }
+                self.ivAlbum.image = albumData.thumbnail              
             } else {
                 lblAlbum.text = "Photo Album"
                 ivAlbum.image = nil

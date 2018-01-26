@@ -21,7 +21,8 @@ class NavTableViewController: UITableViewController {
     @IBOutlet weak var addBarButton: UIBarButtonItem!
     var pathsManager = PathsManager()
     
-    var managedObjectContext: NSManagedObjectContext!
+    static var managedObjectContext: NSManagedObjectContext!
+    var persistentContainer: NSPersistentContainer!
     let disposeBag = DisposeBag()
     
     override func viewDidLoad() {
@@ -30,7 +31,8 @@ class NavTableViewController: UITableViewController {
         tableView.dataSource = nil
         
         if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-            managedObjectContext = appDelegate.managedObjectContext
+            NavTableViewController.managedObjectContext = appDelegate.managedObjectContext
+            persistentContainer = appDelegate.persistentContainer
         }
         
         configureTableView()
@@ -44,12 +46,20 @@ class NavTableViewController: UITableViewController {
         } else {
             // Fallback on earlier versions
         }
+//
+//        do{
+//            try persistentContainer.viewContext.rx.update(Path())
+//        } catch{
+//
+//        }
         
+        //try{persistentContainer.ba}
         tableView.reloadData()
     }
     
     func configureTableView(){
-        managedObjectContext.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
+        //tableView.isEditing = true
+        NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
             .bind(to:tableView.rx.items(cellIdentifier: "crumbcell")) { row, path, cell in
                 cell.textLabel?.text = path.title
                 cell.detailTextLabel?.text = path.startdate?.string ?? ""
@@ -73,9 +83,9 @@ class NavTableViewController: UITableViewController {
         self.tableView.rx.itemDeleted.map { [unowned self] ip -> Path in
             return try self.tableView.rx.model(at: ip)
             }
-            .subscribe(onNext: { [unowned self] (path) in
+            .subscribe(onNext: { (path) in
                 do {
-                    try self.managedObjectContext.rx.delete(path)
+                    try NavTableViewController.managedObjectContext.rx.delete(path)
                 } catch {
                     print(error)
                 }

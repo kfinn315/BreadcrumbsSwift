@@ -26,15 +26,6 @@ public class Point: NSManagedObject, Codable {
         super.init(entity: entitydescription, insertInto: nil)
     }
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Point> {
-        return NSFetchRequest<Point>(entityName: "Point")
-    }
-    
-    @NSManaged public var id: String?
-    @NSManaged public var latitude: Double
-    @NSManaged public var longitude: Double
-    @NSManaged public var timestamp: NSDate?
-    
     public convenience init(id: String? = nil, lat: Double, lng: Double, time: NSDate) {
         self.init()
         if id != nil {

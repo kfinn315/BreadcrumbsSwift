@@ -9,9 +9,9 @@
 import UIKit
 import Eureka
 
-class EditPathViewController : FormViewController {
+class EditPathViewController : FormViewController, CrumbsDelegate {
+   
     var crumbsManager : CrumbsManager?
-    
     var dateformatter : DateFormatter?
     
     override func viewDidLoad() {
@@ -22,6 +22,7 @@ class EditPathViewController : FormViewController {
         dateformatter?.timeStyle = .short
         
         crumbsManager = CrumbsManager.shared
+        crumbsManager?.delegate = self
         let path = crumbsManager?.currentPath
         
         form +++ Section("Main") <<< TextRow(){
@@ -62,6 +63,7 @@ class EditPathViewController : FormViewController {
         
         self.navigationItem.setRightBarButton(UIBarButtonItem.init(barButtonSystemItem: .save, target: self, action: #selector(save)), animated: false)
     }
+    
     @objc func save(){
         let path = crumbsManager?.currentPath
         
@@ -92,9 +94,12 @@ class EditPathViewController : FormViewController {
                 }
             }
         }        
-        crumbsManager?.currentPath = path
-        let updatedCount = CrumbsManager.shared.UpdateCurrentPath()
-        print("updated \(updatedCount) rows")
-        self.navigationController?.popViewController(animated: true)
+        
+        CrumbsManager.shared.UpdateCurrentPath()
     }
+
+    func CrumbsUpdated() {
+            self.navigationController?.popViewController(animated: true)
+    }
+    
 }

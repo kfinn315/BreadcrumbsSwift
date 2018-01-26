@@ -11,25 +11,19 @@ import MapKit
 import CloudKit
 import Photos
 
-class MapViewController: UIViewController, CloudKitDelegate {
-    @IBOutlet weak var buttonShare: UIButton!
+class MapViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!
-    
     
     public var path : Path?
     var mapManager : MapViewManager?;
-    //var container : ContainerViewController?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         mapManager = MapViewManager(map: mapView);
-        
-        //        self.container = (self.parent?.parent as! ContainerViewController);
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        
         if path != nil {
             mapManager?.LoadCrumb(path: path!)
             if path!.albumData != nil {
@@ -38,7 +32,6 @@ class MapViewController: UIViewController, CloudKitDelegate {
             }
         }
     }
-    
     
     override func viewDidAppear(_ animated: Bool) {
     }
@@ -54,9 +47,8 @@ class MapViewController: UIViewController, CloudKitDelegate {
     public func LoadCrumb(path: PathsType){
         ClearMap();
         self.navigationController?.navigationItem.title = path.GetTitle()
-        //setShared(path.GetIsShared());
         
-        AddLine(crumb: path);
+        AddPathLine(path);
         mapManager?.ZoomToFit();
         
         //CrumbsManager.shared.currentPath = path;
@@ -67,15 +59,17 @@ class MapViewController: UIViewController, CloudKitDelegate {
         mapView.removeOverlays(mapView.overlays)
     }
     
-    func AddLine(crumb: PathsType){
+    func AddPathLine(_ path: PathsType){
         var locations = Array<CLLocation>();
         
-        for point in crumb.GetPoints()!{
-            locations.append(point);
-            let annotation = MKPointAnnotation();
-            annotation.coordinate = point.coordinate;
-            annotation.title = String(point.coordinate.latitude)+","+String(point.coordinate.longitude);
-            self.mapView.addAnnotation(annotation);
+        if let points = path.GetPoints() {
+            for point in points {
+                locations.append(point);
+                let annotation = MKPointAnnotation();
+                annotation.coordinate = point.coordinate;
+                annotation.title = String(point.coordinate.latitude)+","+String(point.coordinate.longitude);
+                self.mapView.addAnnotation(annotation);
+            }
         }
         
         var coordinates = locations.map({(location: CLLocation) -> CLLocationCoordinate2D in return location.coordinate})
@@ -95,50 +89,25 @@ class MapViewController: UIViewController, CloudKitDelegate {
 //            AddImagePoints(assets)
 //    }
     func AddImagePoints(_ assets: [PHAsset]){
-        
-        for asset in assets {
-            if let loc = asset.location {
-                PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: { (img, dict) in
-                    let annotation = ImageAnnotation()
-                    annotation.coordinate = loc.coordinate
-                    annotation.title = asset.creationDate?.datestring ?? ""
-                    annotation.image = img
-                    self.mapView.addAnnotation(annotation)
-                })
+        DispatchQueue.global(qos: .userInitiated).async{
+            for asset in assets {
+                if let loc = asset.location {
+                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: {
+                        [weak self] (img, dict) in
+                        let annotation = ImageAnnotation()
+                        annotation.coordinate = loc.coordinate
+                        annotation.title = asset.creationDate?.datestring ?? ""
+                        annotation.image = img
+                        
+                        DispatchQueue.main.async {
+                            self?.mapView.addAnnotation(annotation)
+                        }
+                    })
+                }
             }
         }
         
         //self.mapView.add(points)
-    }
-    
-    func CrumbSaved(_ Id: CKRecordID) {
-    }
-    
-    func errorUpdatingCrumbs(_ Error: Error) {
-        
-    }
-    func errorSavingData(_ Error: Error) {
-        
-    }
-    func CrumbsReset(){}
-    func CrumbDeleted(_ RecordID: CKRecordID) {
-        
-    }
-    func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
-        DispatchQueue.main.async {
-            //self.userpaths = Crumbs;
-            print("GetCrumbData->update map w/ "+String(Crumbs.count)+" crumbs");
-            
-            for path in Crumbs{
-                self.AddLine(crumb: path)
-            }
-            self.mapView.setNeedsLayout();
-            self.mapManager?.ZoomToFit();
-            
-            print("GetCrumbData-> mapView.setNeedsLayout()");
-            
-        }
-        
     }
 }
 

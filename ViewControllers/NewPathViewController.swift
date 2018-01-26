@@ -45,7 +45,7 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
                 //this is called when there's a new location
                 print("location manager didUpdateLocations");
                 
-                self.crumbsManager!.addPointToData(Point.from(cllocation))
+                self.crumbsManager!.addPointToData(LocalPoint.from(cllocation))
                 
             }).disposed(by: disposeBag)
     }
@@ -78,7 +78,7 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
     func buttonSaveClicked(){
         LocationManager.stopLocationUpdates();
         
-        crumbsManager!.SaveNewPath(start: startTime, end: stopTime, title: tfTitle.text ?? "", description: tfNotes.text );
+        crumbsManager!.SaveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: tfTitle.text ?? "", notes: tfNotes.text );
     }
     
     func buttonDoneClicked(){
@@ -137,17 +137,10 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
         alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
         self.present(alert, animated: true, completion: nil)
     }
-    
-    func CrumbsLoaded(_ Crumbs: Array<PathsType>) {
+
+    func CrumbSaved(error: Error?) {
+        DispatchQueue.main.async {
+            self.navigationController?.popViewController(animated: true)
+        }
     }
-    func CrumbsUpdated(_ Crumbs: Array<PathsType>) {
-        //self.dismiss(animated: true, completion: nil)
-    }
-    func CrumbSaved(_ Id: CKRecordID) {
-        self.dismiss(animated: true, completion: nil)
-    }
-    func CrumbsReset() {
-    }
-    
-    func errorUpdatingCrumbs(_ Error: Error){}
 }

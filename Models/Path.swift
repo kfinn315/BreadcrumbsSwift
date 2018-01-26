@@ -13,20 +13,8 @@ import RxCoreData
 
 @objc(Path)
 public class Path: NSManagedObject, Persistable, IdentifiableType {
-    @NSManaged public var id: String?
-    @NSManaged public var title: String?
-    @NSManaged public var notes: String?
-    @NSManaged public var startdate: NSDate?
-    @NSManaged public var enddate: NSDate?
-    @NSManaged public var duration: Float
-    @NSManaged public var stepcount : NSNumber?
-    @NSManaged public var distance: Double
-    @NSManaged public var locations: String?
-    @NSManaged public var pointsJSON: String?
-    @NSManaged public var albumId : String?
-    
     var entitydescription : NSEntityDescription{
-        return NSEntityDescription.entity(forEntityName: "Path", in: ((UIApplication.shared.delegate as? AppDelegate)?.managedObjectContext)!)!
+        return NSEntityDescription.entity(forEntityName: "Path", in: NavTableViewController.managedObjectContext)!
     }
     public static var entityName: String = "Path"
     
@@ -43,10 +31,6 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
 
     }
     
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Path> {
-        return NSFetchRequest<Path>(entityName: "Path")
-    }
-   
     private var _albumdata : PhotoCollection? 
     public var albumData : PhotoCollection? {
         get {
@@ -58,8 +42,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         }
     }
 
-    @objc
-    public override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {
+    @objc public override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {
         super.init(entity: entity, insertInto: context)
     }
     
@@ -77,7 +60,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         enddate = entity.value(forKey: "enddate") as? NSDate
         duration = entity.value(forKey: "duration") as! Float
         distance = entity.value(forKey: "distance") as! Double
-        stepcount = (entity.value(forKey: "stepcount") as! NSNumber)
+        stepcount = (entity.value(forKey: "stepcount") as! Int64)
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
       

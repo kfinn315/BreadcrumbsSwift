@@ -19,20 +19,16 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
     var delegate : CoreLocationDelegate?;
     public var authorized : Driver<Bool>
     public var location : Driver<CLLocation>
-    //static var LManager : CLLocationManager?;
     var updating = false;
     var disposeBag = DisposeBag()
     
     public let locationManager = CLLocationManager()
     
     internal override init() {
-//        if(CoreLocationManager.LManager == nil){
-//            CoreLocationManager.LManager = CLLocationManager();
-//        }
-//
         locationManager.delegate = nil
         
         weak var weakLocationManager = locationManager
+        
         authorized = Observable.deferred{
             let status = CLLocationManager.authorizationStatus()
             guard let strongLocationManager = weakLocationManager else {
@@ -89,9 +85,9 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         locationManager.allowsBackgroundLocationUpdates = false;
         locationManager.stopMonitoringSignificantLocationChanges();
         locationManager.stopUpdatingLocation()
-//
+
         print("Stop location updates")
         updating = false;
-        delegate?.didStopLocationUpdates();
+        delegate?.didStopLocationUpdates?();
     }
 }

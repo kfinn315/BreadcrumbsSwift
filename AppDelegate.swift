@@ -83,7 +83,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 //
     @available(iOS 10.0, *)
     lazy var managedObjectContext: NSManagedObjectContext = {
-        return self.persistentContainer.viewContext
+        return self.persistentContainer.newBackgroundContext()
 //
 //        let coordinator = self.persistentContainer.persistentStoreCoordinator
 //        //let coordinator = self.persistentStoreCoordinator

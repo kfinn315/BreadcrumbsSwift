@@ -12,66 +12,62 @@ import CoreLocation
 import UIKit
 
 class CoreDataManager {
-    var container : NSPersistentContainer?
-    //var managedObjectContext : NSManagedObjectContext?
+    var context : NSManagedObjectContext?
     
     init(){
-        //        DispatchQueue.main.async {
         if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-            self.container = appDelegate.persistentContainer
-            //self.managedObjectContext = appDelegate.managedObjectContext
+            self.context = appDelegate.managedObjectContext
         }
-        //        }
     }
 }
 class PointsManager : CoreDataManager {
-    //var points : [NSManagedObject] = [];
-    
-    func savePoint(_ point: Point) {
+    func savePoint(_ localpoint: LocalPoint) {
         print("savePoint")
         
-        guard container != nil else {
+        guard context != nil else {
             return
         }
         
-        container?.performBackgroundTask({ (context) in
-            let entity = NSEntityDescription.entity(forEntityName: "Point", in: context)!
+        context!.perform { [weak localcontext = self.context] in
+            guard localcontext != nil else { return }
             
-            let mopoint = NSManagedObject(entity: entity, insertInto: context)
-            mopoint.setValue(point.id, forKey: "id")
-            mopoint.setValue(point.latitude, forKeyPath: "latitude")
-            mopoint.setValue(point.longitude, forKeyPath: "longitude")
-            mopoint.setValue(point.timestamp, forKeyPath: "timestamp")
+            let point = Point(context: localcontext!)
+            point.latitude = localpoint.latitude
+            point.longitude = localpoint.longitude
+            point.timestamp = localpoint.timestamp
+            point.id = localpoint.timestamp?.string
             
-            if context.hasChanges {
+            if localcontext!.hasChanges {
                 do{
-                    try context.save()
+                    try localcontext!.save()
                 } catch{
                     print("error \(error)")
                 }
             }
-        })
+        }
     }
     
     func clearPoints() {
         print("clearPoints");
         
-        guard container != nil else {
+        guard context != nil else {
             return
         }
         
-        container?.performBackgroundTask({ (context) in
+        context!.perform {
+            [weak localcontext = self.context] in
+            guard localcontext != nil else { return }
+            
             let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: "Point")
             let request = NSBatchDeleteRequest(fetchRequest: fetch)
             
             do{
-                try context.execute(request)
+                try localcontext!.execute(request)
             } catch{
                 print("error \(error)")
             }
             
-        })
-        //        points.removeAll()
+        }
     }
     
     func fetchPoints() -> Array<Point> {
@@ -79,30 +75,24 @@ class PointsManager : CoreDataManager {
         
         print("fetchPoints -> fetching points");
         
-        guard container != nil else {
+        guard context != nil else {
             return []
         }
         
-        container!.performBackgroundTask { (context) in
-            var mojs : [NSManagedObject] = []
+        context!.perform {
+            [weak localcontext = self.context] in
+            guard localcontext != nil else { return }
             
-            let fetchRequest = NSFetchRequest<Point>(entityName: "Point")
+            let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
             
             do{
-                mojs = try context.fetch(fetchRequest)
+                points = try localcontext!.fetch(fetchRequest)
             } catch{
                 print("error \(error)")
             }
             
             print("fetched "+String(describing: points.count)+" points")
-            
-            for point in mojs {
-                let lat = point.value(forKey: "latitude") as! Double
-                let long = point.value(forKey: "longitude") as! Double
-                let time = point.value(forKey: "timestamp") as! NSDate
-                let id = point.value(forKey: "id") as? String ?? time.description
-                points.append(Point(id: id, lat: lat, lng: long, time: time))
-            }
+           
         }
         
         return points
@@ -110,33 +100,54 @@ class PointsManager : CoreDataManager {
 }
 class PathsManager : CoreDataManager {
     //save all points to a path
-    func savePath(_ path: Path) {
-        guard container != nil else {
+    func savePath(start: Date, end: Date, title: String, notes: String?, steps: Int64?, distance: Double?, callback: @escaping (Error?)->()) {
+        
+        guard context != nil else {
             return
         }
         
-        container!.performBackgroundTask { (context) in
+        context!.perform {
+            [weak localcontext = self.context] in
+            guard localcontext != nil else { return }
+            
+            var points : [Point] = []
+            let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
+            
             do{
-                
-                if let entity = NSEntityDescription.entity(forEntityName: "Path", in: context) {
-                    let pEntity = NSManagedObject(entity: entity, insertInto: context)
-                    pEntity.setValue(path.id ?? path.startdate?.description ?? Date().description, forKeyPath: "id")
-                    pEntity.setValue(path.startdate, forKeyPath: "startdate")
-                    pEntity.setValue(path.enddate, forKeyPath: "enddate")
-                    pEntity.setValue(path.notes, forKey: "notes")
-                    pEntity.setValue(path.distance, forKey: "distance")
-                    pEntity.setValue(path.distance, forKey: "stepcount")
-                    pEntity.setValue(path.duration, forKey: "duration")
-                    pEntity.setValue(path.locations, forKey: "locations")
-                    pEntity.setValue(path.title, forKey: "title")
-                    pEntity.setValue(path.pointsJSON, forKey: "pointsJSON")
-                }
-                
-                if context.hasChanges{
-                    try context.save()
+                points = try localcontext!.fetch(fetchRequest)
+            } catch{
+                print("error \(error)")
+            }
+            
+            print("fetched "+String(describing: points.count)+" points")
+            
+            
+            let path = Path(context: localcontext!)
+            
+            do{
+                path.pointsJSON = String(data: try JSONEncoder().encode(points), encoding: .utf8)
+            }
+            catch{
+                print("error "+error.localizedDescription)
+            }
+            
+            path.startdate = start as NSDate
+            path.enddate = end as NSDate
+            path.title = title
+            path.notes = notes ?? ""
+            path.distance = distance ?? 0
+            path.stepcount = steps ?? 0
+            path.id = path.startdate?.string
+            
+            do{
+                if self.context!.hasChanges{
+                    try localcontext!.save()
+                    localcontext!.refreshAllObjects()
+                    callback(nil)
                 }
             } catch{
                 print("error \(error)")
+                callback(error)
             }
         }
     }
@@ -144,20 +155,18 @@ class PathsManager : CoreDataManager {
     func getPath(_ id: String) -> Path? {
         var path : Path?
         
-        guard container != nil else {
+        guard context != nil else {
             return nil
         }
         
-        container!.performBackgroundTask { (context) in
-            do{
-                let fetchRequest = NSFetchRequest<Path>(entityName: "Path")
-                fetchRequest.predicate = NSPredicate(format: "id = %@", id)
-                fetchRequest.fetchLimit = 1
-                
-                path = try context.fetch(fetchRequest).first
-            } catch{
-                print("error \(error)")
-            }
+        do{
+            let fetchRequest : NSFetchRequest<Path> = Path.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id = %@", id)
+            fetchRequest.fetchLimit = 1
+            
+            path = try context!.fetch(fetchRequest).first
+        } catch{
+            print("error \(error)")
         }
         
         return path
@@ -166,64 +175,57 @@ class PathsManager : CoreDataManager {
     func getPaths() throws -> [Path] {
         var paths : [Path] = []
         
-        guard container != nil else{
+        guard context != nil else{
             return []
         }
         
-        container!.performBackgroundTask { (context) in
-            do{
-                let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "Path")
-                
-                let mojs = try context.fetch(fetchRequest)
-                
-                for pathData in mojs {
-                    let path = Path(entity: pathData)
-                    paths.append(path)
-                }
-            } catch{
-                print("error \(error)")
-            }
+        do{
+            let fetchRequest : NSFetchRequest<Path> = Path.fetchRequest()
+            paths = try context!.fetch(fetchRequest)
+        } catch{
+            print("error \(error)")
         }
         
         return paths
     }
     
-    func updatePath(id: String, properties: [AnyHashable : Any]) -> Int{
-        var changeCount = 0
-        
-        guard container != nil else{
-            return 0
+    func updatePath(id: String, properties: [AnyHashable : Any], callback: @escaping (Int)->()) {
+        guard context != nil else{
+            callback(-1)
+            return
         }
         
-        container!.performBackgroundTask { (context) in
+        context!.perform {
+            [weak localcontext = self.context] in
+            guard localcontext != nil else { return }
+            
             do{
                 let request = NSBatchUpdateRequest(entityName: "Path")
                 request.propertiesToUpdate = properties
                 request.predicate = NSPredicate(format: "id = %@", id)
                 request.resultType = NSBatchUpdateRequestResultType.updatedObjectIDsResultType
                 
-                let resObject = try context.execute(request)
+                let resObject = try localcontext!.execute(request)
                 
                 if let result = resObject as? NSBatchUpdateResult, let updatedIds = result.result  as? [NSManagedObjectID] {
                     
                     if updatedIds.count > 0 {
                         for objectID in updatedIds {
-                            let managedObject = context.object(with: objectID)
-                            context.refresh(managedObject, mergeChanges: false)
+                            let managedObject = localcontext!.object(with: objectID)
+                            localcontext!.refresh(managedObject, mergeChanges: false)
                         }
                     }
                     
-                    changeCount = updatedIds.count
+                    callback(updatedIds.count)
                 }
             } catch{
                 print("error \(error)")
+                callback(-1)
             }
         }
-        
-        return changeCount
     }
     
-    func updatePath(_ path: Path) -> Int{
+    func updatePath(_ path: Path, callback: @escaping (Int)->()) {
         var props : [AnyHashable : Any] = ["title":path.title ?? "", "notes":path.notes ?? "", "locations":path.locations ?? ""]
         
         if let startdate = path.startdate {
@@ -234,6 +236,6 @@ class PathsManager : CoreDataManager {
             props["enddate"] = enddate
         }
         
-        return updatePath(id: path.id!, properties: props)
+        updatePath(id: path.id!, properties: props, callback: callback)
     }
 }

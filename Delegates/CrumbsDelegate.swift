@@ -9,16 +9,14 @@
 import Foundation
 import CloudKit
 
-protocol CrumbsDelegate: class{
-    func CrumbSaved(_ Id: CKRecordID);
+@objc protocol CrumbsDelegate: class{
+    @objc optional func CrumbSaved(error: Error?);
     
-    func CrumbsLoaded(_ Crumbs: Array<PathsType>);
+    @objc optional func CrumbsReset();
     
-    func CrumbsReset();
+    @objc optional func errorUpdatingCrumbs(_ Error: Error);
     
-    func errorUpdatingCrumbs(_ Error: Error);
+    @objc optional func errorSavingData(_ Error: Error);
     
-    func errorSavingData(_ Error: Error);
-    
-    func CrumbsUpdated(_ Crumbs: Array<PathsType>);
+    @objc optional func CrumbsUpdated();
 }

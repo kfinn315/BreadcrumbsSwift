@@ -9,24 +9,33 @@
 import Foundation
 import Photos
 
-public struct PhotoCollection {
+public class PhotoCollection {
     var opts = PHFetchOptions()
 
     init(_ collection: PHAssetCollection) {
-        self.collection = collection
+        self._collection = collection
         
         if #available(iOS 9.0, *) {
             opts.fetchLimit = 1
         }
         
-        let ass = PHAsset.fetchAssets(in: collection, options: opts)
-        if let phasset = ass.firstObject {
-            self.asset = phasset
-            self.thumbnail = nil
+        DispatchQueue.global(qos: .userInitiated).async {
+            let assets = PHAsset.fetchAssets(in: self.collection, options: self.opts)
+            if let asset = assets.firstObject {
+                self.asset = asset
+                
+                PHImageManager.default().requestImage(for: asset, resultHandler: { [weak self] (img, dict) in
+                    self?.thumbnail = img
+                })
+            } else{
+                print("unable to fetch asset of PhotoCollection")
+            }
         }
     }
-    
-    var collection : PHAssetCollection
+    private var _collection : PHAssetCollection
+    var collection : PHAssetCollection {
+        return _collection
+    }
     var asset : PHAsset?
     var thumbnail : UIImage?
     var title : String {
