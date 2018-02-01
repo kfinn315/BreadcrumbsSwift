@@ -8,12 +8,15 @@
 
 import Foundation
 import MapKit
+import SwiftSimplify
 
 public class MapViewManager : NSObject, MKMapViewDelegate{
-    
-    var mapView : MKMapView?
-    var strokeColor = UIColor.red;
-    var lineWidth = CGFloat(2.0);
+    let LINE_TOLERANCE : Float = 0.000005
+    let ANNOTATION_LAT_DELTA : CLLocationDistance = 0.010
+    let strokeColor = UIColor.red
+    let lineWidth = CGFloat(2.0)
+
+    weak var mapView : MKMapView?
 
     public override init(){ }
     
@@ -32,6 +35,7 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
     //load crumb and display
     public func LoadCrumb(path: Path){
         ClearMap();
+        
         AddLine(crumb: path);
         ZoomToFit();
     }
@@ -72,19 +76,22 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
     }
     
     func AddLine(crumb: Path){
-        var locations = Array<Point>();
+        //var locations = Array<Point>();
         
         let points = crumb.getPoints()
-        for point in points{
-            locations.append(point);
+       
+        let coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
+        
+        var simplecoordinates = SwiftSimplify.simplify(coordinates, tolerance: LINE_TOLERANCE)
+        
+        for coordinate in simplecoordinates{
             let annotation = MKPointAnnotation();
-            annotation.coordinate = point.coordinates
-            annotation.title = crumb.title
+            annotation.coordinate = coordinate
+            //annotation.title = crumb.title
             self.mapView?.addAnnotation(annotation);
         }
         
-        var coordinates = locations.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
-        let polyline = MKPolyline(coordinates: &coordinates, count: locations.count)
+        let polyline = MKPolyline(coordinates: &simplecoordinates, count: simplecoordinates.count)
         
         self.mapView?.add(polyline)
     }
@@ -106,6 +113,24 @@ public class MapViewManager : NSObject, MKMapViewDelegate{
             let view = MKAnnotationView()
             view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
             return view;
+        }
+    }
+    
+    public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        var showAnnotations = true
+
+        if mapView.region.span.latitudeDelta > ANNOTATION_LAT_DELTA || mapView.camera.altitude > 1400.0 {
+            showAnnotations = false
+        }
+        
+        for annotation in mapView.annotations
+        {
+            if showAnnotations {
+                mapView.view(for: annotation)?.isHidden = false
+            }
+            else {
+                mapView.view(for: annotation)?.isHidden = true
+            }
         }
     }
 }
