@@ -23,7 +23,7 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
         
         crumbsManager = CrumbsManager.shared
         crumbsManager?.delegate = self
-        let path = crumbsManager?.currentPath
+        weak var path = crumbsManager?.currentPath
         
         form +++ Section("Main") <<< TextRow(){
             row in row.title = "Title"
@@ -65,7 +65,7 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
     }
     
     @objc func save(){
-        let path = crumbsManager?.currentPath
+        weak var path = crumbsManager?.currentPath
         
         guard path != nil else {
             return

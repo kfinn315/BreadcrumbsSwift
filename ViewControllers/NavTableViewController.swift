@@ -71,7 +71,7 @@ class NavTableViewController: UITableViewController {
                 do {
                     CrumbsManager.shared.currentPath = path
                     
-                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "pathDetail") as? PathDetailViewController
+                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {
                        // vc.path = path
                         self.showDetailViewController(vc, sender: self)

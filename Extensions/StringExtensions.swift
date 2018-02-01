@@ -30,3 +30,35 @@ extension String {
         }
         
 }
+
+extension Int64 {
+    var formatted : String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumSignificantDigits = 0
+        formatter.groupingSeparator = ","
+        return formatter.string(from: self as NSNumber)
+    }
+}
+
+extension Double {
+    var formatted : String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumSignificantDigits = 2
+        formatter.groupingSeparator = ","
+        return formatter.string(from: self as NSNumber)
+    }
+}
+
+extension Float {
+    var formatted : String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumSignificantDigits = 2
+        formatter.groupingSeparator = ","
+        return formatter.string(from: self as NSNumber)
+    }
+}
+
+

@@ -15,8 +15,8 @@ import RxSwift
 import RxCocoa
 
 class CoreLocationManager: NSObject, CLLocationManagerDelegate{
-    static let sharedIntance = CoreLocationManager();
-    var delegate : CoreLocationDelegate?;
+    static let sharedInstance = CoreLocationManager();
+    weak var delegate : CoreLocationDelegate?;
     public var authorized : Driver<Bool>
     public var location : Driver<CLLocation>
     var updating = false;

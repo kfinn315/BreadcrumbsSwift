@@ -24,6 +24,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             manager.startLocationUpdates();
         }
         
+        UIPageControl.appearance().pageIndicatorTintColor = UIColor.white
+        UIPageControl.appearance().currentPageIndicatorTintColor = UIColor.black
+        
         return true
     }
 
