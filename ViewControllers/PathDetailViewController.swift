@@ -8,11 +8,14 @@
 
 import MapKit
 import UIKit
+import RxSwift
+import RxCocoa
 
 public class PathDetailViewController : UIViewController {
     private weak var crumbsManager : CrumbsManager?
-    private weak var path : Path?
+   // private weak var path : Path?
     private var mapManager : MapViewManager?
+    var disposeBag = DisposeBag()
     
     @IBOutlet weak var ivTop: UIImageView!
     @IBOutlet weak var lblTitle: UILabel!
@@ -39,15 +42,29 @@ public class PathDetailViewController : UIViewController {
         super.viewDidLoad()
         
         crumbsManager = CrumbsManager.shared
-        //        mapManager = MapViewManager(map: mapView)
-        //        mapView.isUserInteractionEnabled = true
-        //
-        //        mapView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(onMapViewClicked)))
-        
+
         btnEditTop = UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(editPath))
         self.navigationItem.setRightBarButton(btnEditTop, animated: true)
         
         ivTop.setRounded()
+        
+        crumbsManager?.currentPath.asObservable().subscribe(onNext: {[weak self] path in
+            self?.title = path?.title
+            
+            guard path != nil else{
+                print("error: currentPath is nil")
+                return
+            }
+            
+            self?.mapManager?.LoadCrumb(path: path!)
+            
+            self?.lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
+            self?.lblTitle.text = path?.title
+            self?.tvNotes.text = "\(path?.startdate?.string ?? "") - \(path?.notes ?? "")"
+            self?.lblSteps.text = path?.stepcount.formatted
+            self?.lblDistance.text = path?.distance.formatted
+            self?.lblDuration.text = path?.duration.formatted
+        }).disposed(by: disposeBag)
     }
     
     public override func viewWillAppear(_ animated: Bool) {
@@ -59,38 +76,14 @@ public class PathDetailViewController : UIViewController {
             // Fallback on earlier versions
         }
         
+        
         loadModel()
         
-        if let photosVC = childViewControllers.first as? PhotosViewController, let photos = path?.albumData
-        {
-            photosVC.assetCollection = photos.collection
-            
-            let layout = photosVC.collectionViewLayout as! UICollectionViewFlowLayout
-            layout.itemSize = CGSize.init(width: 64.0, height: photosVC.view.frame.height)
-            layout.scrollDirection = .horizontal
-        }
     }
     
     private func setup(){ }
     
     private func loadModel(){
-        path = crumbsManager?.currentPath
-        
-        self.title = path?.title
-        
-        guard path != nil else{
-            print("error: currentPath is nil")
-            return
-        }
-        
-        mapManager?.LoadCrumb(path: path!)
-        
-        lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
-        lblTitle.text = path?.title
-        tvNotes.text = "\(path?.startdate?.string ?? "") - \(path?.notes ?? "")"
-        lblSteps.text = path?.stepcount.formatted
-        lblDistance.text = path?.distance.formatted
-        lblDuration.text = path?.duration.formatted
     }
     
     @objc func editPath(){
@@ -98,9 +91,9 @@ public class PathDetailViewController : UIViewController {
     }
     
     @objc func onMapViewClicked(){
-        if path != nil, let vc = storyboard?.instantiateViewController(withIdentifier: "MapVC") as? MapViewController {
+        if let vc = storyboard?.instantiateViewController(withIdentifier: "MapVC") as? MapViewController {
             self.navigationController?.pushViewController(vc, animated: true)
-            vc.path = path
+            //vc.path = path
         }
     }
 }

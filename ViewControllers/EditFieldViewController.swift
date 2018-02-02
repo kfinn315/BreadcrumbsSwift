@@ -8,11 +8,16 @@
 
 import UIKit
 import Eureka
+import RxCocoa
+import RxSwift
 
 class EditPathViewController : FormViewController, CrumbsDelegate {
    
     var crumbsManager : CrumbsManager?
     var dateformatter : DateFormatter?
+    var disposeBag = DisposeBag()
+    
+    weak var path : Path?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,7 +28,11 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
         
         crumbsManager = CrumbsManager.shared
         crumbsManager?.delegate = self
-        weak var path = crumbsManager?.currentPath
+        
+        crumbsManager?.currentPath.asObservable().subscribe(onNext: { [weak self] path in
+            self?.path = path
+            self?.updateData()
+        }).disposed(by: disposeBag)
         
         form +++ Section("Main") <<< TextRow(){
             row in row.title = "Title"
@@ -64,6 +73,31 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
         self.navigationItem.setRightBarButton(UIBarButtonItem.init(barButtonSystemItem: .save, target: self, action: #selector(save)), animated: false)
     }
     
+    func updateData() {
+        for row in form.allRows{
+            if let tag = row.tag {
+                switch tag {
+                case "title":
+                    (row as! TextRow).value = path?.title
+                    break
+                case "notes":
+                    (row as! TextRow).value = path?.notes
+                    break
+                case "locations":
+                    (row as! TextRow).value = path?.locations
+                    break
+                case "startdate" :
+                    (row as! DateTimeRow).value = path?.startdate as Date?
+                    break
+                case "enddate" :
+                    (row as! DateTimeRow).value = path?.enddate as Date?
+                    break
+                default:
+                    break
+                }
+            }
+        }         }
+    
     @objc func save(){
         weak var path = crumbsManager?.currentPath
         
@@ -75,19 +109,19 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
             if let tag = row.tag {
                 switch tag {
                 case "title":
-                    path?.title = (row as! TextRow).value
+                    path?.value?.title = (row as! TextRow).value
                     break
                 case "notes":
-                    path?.notes = (row as! TextRow).value
+                    path?.value?.notes = (row as! TextRow).value
                     break
                 case "locations":
-                    path?.locations = (row as! TextRow).value
+                    path?.value?.locations = (row as! TextRow).value
                     break
                 case "startdate" :
-                    path?.startdate = (row as! DateTimeRow).value as NSDate?
+                    path?.value?.startdate = (row as! DateTimeRow).value as NSDate?
                     break
                 case "enddate" :
-                    path?.enddate = (row as! DateTimeRow).value as NSDate?
+                    path?.value?.enddate = (row as! DateTimeRow).value as NSDate?
                     break
                 default:
                     break

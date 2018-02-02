@@ -8,6 +8,8 @@
 
 import Foundation
 import Photos
+import RxSwift
+import RxCocoa
 
 public class PhotoCollection {
     var opts = PHFetchOptions()
@@ -21,10 +23,10 @@ public class PhotoCollection {
         
         DispatchQueue.global(qos: .userInitiated).async {
             let assets = PHAsset.fetchAssets(in: self.collection, options: self.opts)
-            if let asset = assets.firstObject {
-                self.asset = asset
-                
-                PHImageManager.default().requestImage(for: asset, resultHandler: { [weak self] (img, dict) in
+
+            //get first image to use as collection thumbnail
+            if let thumbnailAsset = assets.firstObject {
+                PHImageManager.default().requestImage(for: thumbnailAsset, resultHandler: { [weak self] (img, dict) in
                     self?.thumbnail = img
                 })
             } else{
@@ -36,7 +38,6 @@ public class PhotoCollection {
     var collection : PHAssetCollection {
         return _collection
     }
-    var asset : PHAsset?
     var thumbnail : UIImage?
     var title : String {
         return collection.localizedTitle ?? ""
@@ -57,6 +58,12 @@ class PhotoManager{
     static func getAssetCollection(from localId : String) -> PHAssetCollection? {
         let result = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [localId], options: nil)
         return result.firstObject
+    }
+    static func getImages(_ id: String) -> [PHAsset]? {
+        if let coll = getAssetCollection(from: id) {
+            return getImages(coll)
+        }
+        return nil
     }
     static func getImages(_ collection: PHAssetCollection) -> [PHAsset]{
         var assets : [PHAsset] = []

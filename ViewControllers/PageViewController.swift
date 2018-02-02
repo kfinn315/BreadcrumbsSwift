@@ -9,8 +9,7 @@
 import UIKit
 
 class PageViewController : UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
-    var pages : [UIViewController?] = []
-    var bgColor : [UIColor] = [UIColor.yellow, UIColor.orange, UIColor.blue]
+    lazy var pages : [UIViewController?] = []
     var currentIndex = 0
     
     required init?(coder: NSCoder) {
@@ -54,7 +53,7 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     }
     
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
-        if viewController is PathDetail2VC {
+        if viewController is PathDetailViewController {
             return pages[1]
         }
 
@@ -75,7 +74,7 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     
 
     func pageViewController(_ pageViewController: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
-        if pendingViewControllers.first is PathDetail2VC {
+        if pendingViewControllers.first is PathDetailViewController {
             currentIndex = 0
         }
         

@@ -1,16 +1,16 @@
 import UIKit
 import Photos
 import Foundation
+import RxSwift
+import RxCocoa
 
-class PhotosViewController: UICollectionViewController {
-    var assetCollection: PHAssetCollection! {
-        didSet{
-            refreshData()
-        }
-    }
-    var photosAsset: PHFetchResult<AnyObject>?
-    var assetThumbnailSize: CGSize!
+class PhotosViewController: UICollectionViewController {    
+    var disposeBag = DisposeBag()
+    
+    private var assetThumbnailSize: CGSize!
     var AlbumAlert : UIAlertController?
+    var crumbsManager = CrumbsManager.shared
+    private var assets : [PHAsset]?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,6 +23,12 @@ class PhotosViewController: UICollectionViewController {
         self.AlbumAlert?.addAction(actionAlbum)
         self.AlbumAlert?.addAction(actionExisting)
         self.AlbumAlert?.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
+        
+        crumbsManager.currentPhotoCollection.asObservable().subscribe(onNext: { [weak self] photocollection in
+            self?.assets = photocollection
+            self?.refreshData()
+        }).disposed(by: disposeBag)
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -32,32 +38,24 @@ class PhotosViewController: UICollectionViewController {
             
             self.assetThumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
         }
-        
-        refreshData()
-       
-        navigationItem.setRightBarButton(UIBarButtonItem.init(barButtonSystemItem: .trash, target: self, action: #selector(removeAlbum)), animated: true)
+
     }
+    
     func refreshData(){
-        guard assetCollection != nil else {
-            print("Asset collection is nil")
-            return
-        }
-        
-        //fetch the photos from collection
-        self.photosAsset = (PHAsset.fetchAssets(in: self.assetCollection, options: nil) as AnyObject!) as! PHFetchResult<AnyObject>!
-        
+
         self.collectionView!.reloadData()
+        
     }
-    func removeAlbum(){
-        if var vcs = self.navigationController?.viewControllers {
-            _ = vcs.popLast()
-            if vcs.last as? PathDetailViewController != nil {
-                CrumbsManager.shared.currentPath?.albumData = nil
-            }
-            
-            self.navigationController?.setViewControllers(vcs, animated: true)
-        }
-    }
+//    func removeAlbum(){
+//        if var vcs = self.navigationController?.viewControllers {
+//            _ = vcs.popLast()
+//            if vcs.last as? PathDetailViewController != nil {
+//                CrumbsManager.shared.currentPath?.albumData = nil
+//            }
+//
+//            self.navigationController?.setViewControllers(vcs, animated: true)
+//        }
+//    }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -77,8 +75,8 @@ class PhotosViewController: UICollectionViewController {
         // #warning Incomplete implementation, return the number of items
         var count: Int = 1
         
-        if(self.photosAsset != nil){
-            count = self.photosAsset!.count + 1
+        if(self.assets != nil){
+            count = self.assets!.count + 1
         }
         
         return count;
@@ -86,7 +84,7 @@ class PhotosViewController: UICollectionViewController {
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
 
-        if self.photosAsset == nil || indexPath.row == self.photosAsset?.count { //last cell
+        if self.assets == nil || indexPath.row == self.assets?.count { //last cell
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "addPhoto", for: indexPath as IndexPath) as! AddPhotoCell
             
             return cell
@@ -95,13 +93,14 @@ class PhotosViewController: UICollectionViewController {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath) as! ImageCollectionViewCell
         
         //Modify the cell
-        let asset: PHAsset = self.photosAsset?[indexPath.item] as! PHAsset
-        
-        PHImageManager.default().requestImage(for: asset, targetSize: self.assetThumbnailSize, contentMode: .aspectFill, options: nil, resultHandler: {(result, info)in
-            if result != nil {
-                cell.imageView.image = result
-            }
-        })
+        if assets?.count ?? 0 > indexPath.item, let asset = self.assets?[indexPath.item]
+        {
+            PHImageManager.default().requestImage(for: asset, targetSize: self.assetThumbnailSize, contentMode: .aspectFill, options: nil, resultHandler: {(result, info)in
+                if result != nil {
+                    cell.imageView.image = result
+                }
+            })
+        }
         
         return cell
     }
@@ -121,7 +120,7 @@ class PhotosViewController: UICollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath){
-        if self.photosAsset == nil || indexPath.row == self.photosAsset?.count { //last cell
+        if self.assets == nil || indexPath.row == self.assets?.count { //last cell
             present(AlbumAlert!, animated: true, completion: nil)
         } else{
             showFull()
@@ -130,16 +129,16 @@ class PhotosViewController: UICollectionViewController {
     
     func showFull(){
         let photovc = storyboard?.instantiateViewController(withIdentifier: "Photos Table") as! PhotosViewController
-        photovc.assetCollection = assetCollection
+        //photovc.assetCollection = assetCollection
         
         self.parent?.navigationController?.pushViewController(photovc, animated: true)
     }
     public func createAnAlbum(){
         let crumbsManager = CrumbsManager.shared
         let path = crumbsManager.currentPath
-        if let start = path?.startdate, let end = path?.enddate {
-            PhotoManager.createTimespanAlbum(name: "\(path?.title ?? "breadcrumb") - \((start as Date).datestring)", start: start as Date, end: end as Date, completionHandler: {
-                [weak self] (collection, error) in
+        if let start = path.value?.startdate, let end = path.value?.enddate {
+            PhotoManager.createTimespanAlbum(name: "\(path.value?.title ?? "breadcrumb") - \((start as Date).datestring)", start: start as Date, end: end as Date, completionHandler: {
+                (collection, error) in
                 if collection != nil {
                     _ = crumbsManager.UpdateCurrentAlbum(collection: collection!)
                     

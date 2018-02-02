@@ -10,11 +10,15 @@ import UIKit
 import MapKit
 import CloudKit
 import Photos
+import RxSwift
+import RxCocoa
 
 class MapViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!
     
-    public var path : Path?
+    var disposeBag = DisposeBag()
+    
+    private weak var path : Path?
     var mapManager : MapViewManager?;
     
     override func viewDidLoad() {
@@ -24,13 +28,26 @@ class MapViewController: UIViewController {
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        if path != nil {
-            mapManager?.LoadCrumb(path: path!)
-            if path!.albumData != nil {
-                let assets = PhotoManager.getImages(path!.albumData!.collection)
-                AddImagePoints(assets)
+        CrumbsManager.shared.currentPath.asObservable().subscribe(onNext: { [weak self] path in
+                self?.path = path
+            if path != nil {
+                self?.mapManager?.LoadCrumb(path: path!)
             }
-        }
+        }).disposed(by: disposeBag)
+        
+        CrumbsManager.shared.currentPhotoCollection.asObservable().subscribe(onNext: {[weak self] collection in
+            if let collectionImages = collection {
+                self?.AddImagePoints(collectionImages)
+            }
+        }).disposed(by: disposeBag)
+
+        //        if path != nil {
+//            mapManager?.LoadCrumb(path: path!)
+//            if path!.albumData != nil {
+//                let assets = PhotoManager.getImages(path!.albumData!.collection)
+//                AddImagePoints(assets)
+//            }
+//        }
     }
     
     override func viewDidAppear(_ animated: Bool) {

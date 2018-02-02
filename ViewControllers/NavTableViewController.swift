@@ -69,7 +69,7 @@ class NavTableViewController: UITableViewController {
         tableView.rx.itemSelected.map { [unowned self] ip -> Path in return try self.tableView.rx.model(at: ip)
             }.subscribe(onNext: { [unowned self] (path) in
                 do {
-                    CrumbsManager.shared.currentPath = path
+                    CrumbsManager.shared.currentPath.value = path
                     
                     if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {

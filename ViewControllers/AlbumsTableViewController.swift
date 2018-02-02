@@ -53,35 +53,29 @@ public class AlbumsTableViewController : UITableViewController {
         let container = data[indexPath.row]
         cell.textLabel?.text = container.collection.localizedTitle
 
-        if container.asset != nil {
-        cell.tag = Int(manager.requestImage(for: container.asset!,
-                                            targetSize: CGSize(width: 100.0, height: 100.0),
-                                            contentMode: .aspectFill,
-                                            options: nil) { [weak self] (result, _) in
-                                                if let destinationCell = tableView.cellForRow(at: indexPath) {
-                                                    self?.data[indexPath.row].thumbnail = result
-                                                    destinationCell.imageView?.image = result
-                                                    destinationCell.setNeedsLayout()
-                                                }
-        })
-        }
-        
+        cell.imageView?.image = container.thumbnail
+//
+//        if container.asset != nil {
+//        cell.tag = Int(manager.requestImage(for: container.asset!,
+//                                            targetSize: CGSize(width: 100.0, height: 100.0),
+//                                            contentMode: .aspectFill,
+//                                            options: nil) { [weak self] (result, _) in
+//                                                if let destinationCell = tableView.cellForRow(at: indexPath) {
+//                                                    self?.data[indexPath.row].thumbnail = result
+//                                                    destinationCell.imageView?.image = result
+//                                                    destinationCell.setNeedsLayout()
+//                                                }
+//        })
+//        }
+//
         return cell
     }
     
     public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        var vcs =  self.navigationController?.viewControllers
+        let album = self.data[indexPath.row]
+        _ = CrumbsManager.shared.UpdateCurrentAlbum(collection: album)
         
-        guard vcs != nil else{ return }
-        
-        _ = vcs!.popLast()
-        
-        if vcs!.last is PathDetailViewController {
-                let album = self.data[indexPath.row]
-                _ = CrumbsManager.shared.UpdateCurrentAlbum(collection: album)
-        }
-        
-        navigationController?.setViewControllers(vcs!, animated: true)
+        self.navigationController?.popViewController(animated: true)
     }
 
 }

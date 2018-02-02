@@ -8,22 +8,26 @@
     
     import Foundation
     import CoreLocation
-    import CloudKit
     import CoreData
     import UIKit
     import CoreMotion
+    import RxCocoa
+    import RxSwift
+    import Photos
     
     class CrumbsManager: NSObject {//}, CloudKitDelegate {
+        public var currentPath : Variable<Path?> = Variable(nil)
+        public var currentPhotoCollection : Variable<[PHAsset]?> = Variable(nil)
+        
         var pathsManager = PathsManager();
         var pointsManager = PointsManager();
         weak var delegate : CrumbsDelegate?;
         var pedometer = CMPedometer()
-        
-        var currentPath : Path?
-        
         var managedObjectContext : NSManagedObjectContext?
-        
+        var disposeBag = DisposeBag()
+
         private static var _shared : CrumbsManager?
+        
         class var shared : CrumbsManager {
             if _shared == nil {
                 _shared = CrumbsManager()
@@ -38,39 +42,51 @@
             if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
                 self.managedObjectContext = appDelegate.managedObjectContext
             }
+            
+            currentPath.asObservable().bind { [weak self] (path) in
+                self?.updatePhotoCollection(path?.albumId)
+            }.disposed(by: disposeBag)
         }
         
         func UpdateCurrentAlbum(collection: PhotoCollection) {
-            guard currentPath != nil, currentPath!.id != nil else{ return }
-            
-            currentPath?.albumData = collection
+            if currentPath.value == nil {
+                return
+            }
+
+            updatePhotoCollection(collection.id)
             UpdateCurrentPath(albumid: collection.id)
+        }
+        
+        private func updatePhotoCollection(_ id: String?){
+            if id != nil {
+                currentPhotoCollection.value = PhotoManager.getImages(id!)
+            } else{
+                currentPhotoCollection.value = nil
+            }
         }
         
         //returns number of paths updated
         private func UpdateCurrentPath(albumid: String) {
-            guard currentPath != nil, currentPath!.id != nil else{
+            if currentPath.value == nil {
                 return
             }
 
             let propUpdates : [AnyHashable:Any] = ["albumId": albumid]
-                
-            pathsManager.updatePath(id: currentPath!.id!, properties: propUpdates, callback: {
-                [weak self] count in
-                
-                DispatchQueue.main.async{
-                    self?.delegate?.CrumbsUpdated?()
-                }
-            })
         }
         
         //returns number of paths updated
         func UpdateCurrentPath() {
-            guard currentPath != nil, currentPath!.id != nil else{ return }
+            if currentPath.value == nil {
+                return
+            }
             
-            pathsManager.updatePath(currentPath!, callback: { [weak self] count in
-                if self != nil, let id = self?.currentPath?.id {
-                    self?.currentPath = self?.pathsManager.getPath(id)
+            pathsManager.updatePath(currentPath.value!, callback: { [weak self] count in
+                if self?.currentPath.value == nil {
+                    return
+                }
+
+                if let id = self?.currentPath.value?.id {
+                    self?.currentPath.value = self?.pathsManager.getPath(id)
                 }
                 DispatchQueue.main.async{
                     self?.delegate?.CrumbsUpdated?()

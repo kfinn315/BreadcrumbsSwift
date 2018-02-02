@@ -30,18 +30,6 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         return []
 
     }
-    
-    private var _albumdata : PhotoCollection? 
-    public var albumData : PhotoCollection? {
-        get {
-            return _albumdata
-        }
-        set {
-            _albumdata = newValue
-            albumId = newValue?.id
-        }
-    }
-
     @objc public override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {
         super.init(entity: entity, insertInto: context)
     }
@@ -63,10 +51,6 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         stepcount = (entity.value(forKey: "stepcount") as! Int64)
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
-      
-        if albumId != nil {
-            _albumdata = PhotoManager.getPhotoCollection(from: albumId!)
-        }
     }
     
     public typealias T = NSManagedObject

@@ -53,9 +53,9 @@ class PathsType{
             crumb.notes = descr
         }
         
-        if let points = Record?["Points"] as? Array<Point> {
-//            var pts = points //broken
-        }
+//        if let points = Record?["Points"] as? Array<Point> {
+////            var pts = points //broken
+//        }
         
         crumb.title = Record?["Title"] as? String ?? ""
         //crumb.RecordId = Record?["UserId"] as? CKRecordID;
