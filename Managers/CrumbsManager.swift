@@ -8,6 +8,7 @@
     
     import Foundation
     import CoreLocation
+//    import CloudKit
     import CoreData
     import UIKit
     import CoreMotion
@@ -71,7 +72,7 @@
                 return
             }
 
-            let propUpdates : [AnyHashable:Any] = ["albumId": albumid]
+            currentPath.value?.albumId = albumid
         }
         
         //returns number of paths updated
