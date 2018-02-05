@@ -12,8 +12,7 @@ import CoreLocation
 
 class SettingsViewController : UIViewController {
    // @IBOutlet weak var btnDone: UIBarButtonItem!
-    @IBOutlet weak var segmentAccuracy: UISegmentedControl!
-    
+    @IBOutlet weak var segmentAccuracy: UISegmentedControl!    
     @IBOutlet weak var switchBGUpdates: UISwitch!
     @IBOutlet weak var sliderDist: UISlider!
     @IBOutlet weak var switchSigUpdates: UISwitch!

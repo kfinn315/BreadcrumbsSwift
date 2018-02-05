@@ -59,9 +59,11 @@ class PhotoManager{
         let result = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [localId], options: nil)
         return result.firstObject
     }
-    static func getImages(_ id: String) -> [PHAsset]? {
-        if let coll = getAssetCollection(from: id) {
-            return getImages(coll)
+    static func getImages(_ id: String) -> (String?,[PHAsset]?)? {
+        let photoalbum = getPhotoCollection(from: id)
+        
+        if let album = photoalbum {
+            return (album.title, getImages(album.collection))
         }
         return nil
     }

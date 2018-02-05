@@ -12,9 +12,10 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     lazy var pages : [UIViewController?] = []
     var currentIndex = 0
     
+    @IBOutlet weak var btnEdit: UIBarButtonItem!
+    
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-       
     }
     
     override func viewDidLoad() {
@@ -28,6 +29,7 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         
         self.delegate = self
         
+       // btnEdit.action = #selector(editPath)
     }
     
     override func viewDidLayoutSubviews() {
@@ -86,10 +88,8 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
             currentIndex = 2
         }
     }
-//
-//    func setBGColor(){
-//         self.view.backgroundColor = bgColor[currentIndex]
-//    }
-//
-//
+    
+    @objc func editPath(){
+        self.navigationController?.pushViewController(EditPathViewController(), animated: true)
+    }
 }

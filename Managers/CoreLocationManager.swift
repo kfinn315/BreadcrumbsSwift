@@ -6,20 +6,24 @@
 //  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
-//import UIKit
-//import Foundation
 import CoreLocation
-//import CloudKit
-//import CoreData
 import RxSwift
 import RxCocoa
+
+public enum LocationAccuracy {
+    case walking
+    case running
+    case biking
+    case driving
+    case custom
+}
 
 class CoreLocationManager: NSObject, CLLocationManagerDelegate{
     static let sharedInstance = CoreLocationManager();
     weak var delegate : CoreLocationDelegate?;
     public var authorized : Driver<Bool>
     public var location : Driver<CLLocation>
-    var updating = false;
+    private var updating = false;
     var disposeBag = DisposeBag()
     
     public let locationManager = CLLocationManager()
@@ -58,12 +62,33 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         }
         
         //locationManager.delegate = self;
-        updateSettings()
+//        updateSettings()
     }
 
-    func updateSettings(){
-        locationManager.desiredAccuracy = LocationSettings.locationAccuracy;
-        locationManager.distanceFilter = LocationSettings.minimumDistance;
+    private func updateSettings(_ accuracy: LocationAccuracy){
+        switch accuracy {
+            case .walking:
+                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+                locationManager.distanceFilter = 50.0 //meters
+                break;
+            case .running:
+                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+                locationManager.distanceFilter = 50.0 //meters
+                break
+            case .biking:
+                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+                locationManager.distanceFilter = 100.0;
+                break
+            case .driving:
+                locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+                locationManager.distanceFilter = 1000.0 //meters
+                break
+            case .custom:
+                locationManager.desiredAccuracy = LocationSettings.locationAccuracy;
+                locationManager.distanceFilter = LocationSettings.minimumDistance;
+                break
+        }
+        
         locationManager.allowsBackgroundLocationUpdates = LocationSettings.backgroundLocationUpdatesOn;
         if(LocationSettings.significantUpdatesOn){
             locationManager.startMonitoringSignificantLocationChanges()
@@ -72,13 +97,16 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         }
     }
 
-    func startLocationUpdates() {
+    func startLocationUpdates(with accuracy: LocationAccuracy = .walking){
+        updateSettings(accuracy)
+        
+        updating = true
         print("start Location Updates()")
         locationManager.startUpdatingLocation()
     }
     
-    func updatesAreOn() -> Bool{
-        return updating;
+    public var isUpdating : Bool {
+        return updating
     }    
     
     func stopLocationUpdates(){

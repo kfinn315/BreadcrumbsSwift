@@ -17,18 +17,30 @@ class PhotosViewController: UICollectionViewController {
         
         self.collectionView?.delegate = self
         
-        self.AlbumAlert = UIAlertController(title: "Photo Album", message: "Would you like to create an album or choose an existing one?", preferredStyle: UIAlertControllerStyle.alert)
-        let actionAlbum = UIAlertAction.init(title: "Create an Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.createAnAlbum()})
+        
+        self.AlbumAlert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
+//        let actionAlbum = UIAlertAction.init(title: "Create an Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.createAnAlbum()})
         let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.showPhotoLibrary()})
-        self.AlbumAlert?.addAction(actionAlbum)
+//        self.AlbumAlert?.addAction(actionAlbum)
         self.AlbumAlert?.addAction(actionExisting)
         self.AlbumAlert?.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
-        
-        crumbsManager.currentPhotoCollection.asObservable().subscribe(onNext: { [weak self] photocollection in
-            self?.assets = photocollection
+        crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
+            self?.title = self?.crumbsManager.currentAlbumTitle
+            self?.assets = assetcollection
             self?.refreshData()
         }).disposed(by: disposeBag)
-        
+//
+//        self.AlbumAlert = UIAlertController(title: "Photo Album", message: "Would you like to create an album or choose an existing one?", preferredStyle: UIAlertControllerStyle.alert)
+//        let actionAlbum = UIAlertAction.init(title: "Create an Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.createAnAlbum()})
+//        let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.showPhotoLibrary()})
+//        self.AlbumAlert?.addAction(actionAlbum)
+//        self.AlbumAlert?.addAction(actionExisting)
+//        self.AlbumAlert?.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
+//        crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
+//            self?.title = self?.crumbsManager.currentAlbumTitle
+//            self?.assets = assetcollection
+//            self?.refreshData()
+//        }).disposed(by: disposeBag)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -123,15 +135,17 @@ class PhotosViewController: UICollectionViewController {
         if self.assets == nil || indexPath.row == self.assets?.count { //last cell
             present(AlbumAlert!, animated: true, completion: nil)
         } else{
-            showFull()
+            showFull(assets?[indexPath.row])
         }
     }
     
-    func showFull(){
-        let photovc = storyboard?.instantiateViewController(withIdentifier: "Photos Table") as! PhotosViewController
-        //photovc.assetCollection = assetCollection
-        
-        self.parent?.navigationController?.pushViewController(photovc, animated: true)
+    func showFull(_ asset: PHAsset?){
+        guard asset != nil else{ return }
+
+        let imageview = storyboard?.instantiateViewController(withIdentifier: "ImageView") as! ImageViewController
+        imageview.asset = asset
+        //photovc.assetCollection = assetCollection        
+        self.parent?.navigationController?.pushViewController(imageview, animated: true)
     }
     public func createAnAlbum(){
         let crumbsManager = CrumbsManager.shared

@@ -28,7 +28,6 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
         
         crumbsManager = CrumbsManager.shared
         crumbsManager?.delegate = self
-        
         crumbsManager?.currentPath.asObservable().subscribe(onNext: { [weak self] path in
             self?.path = path
             self?.updateData()
@@ -96,10 +95,11 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
                     break
                 }
             }
-        }         }
+        }
+    }
     
     @objc func save(){
-        weak var path = crumbsManager?.currentPath
+        weak var path = crumbsManager?.currentPath.value
         
         guard path != nil else {
             return
@@ -109,31 +109,29 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
             if let tag = row.tag {
                 switch tag {
                 case "title":
-                    path?.value?.title = (row as! TextRow).value
+                    path?.title = (row as! TextRow).value
                     break
                 case "notes":
-                    path?.value?.notes = (row as! TextRow).value
+                    path?.notes = (row as! TextRow).value
                     break
                 case "locations":
-                    path?.value?.locations = (row as! TextRow).value
+                    path?.locations = (row as! TextRow).value
                     break
                 case "startdate" :
-                    path?.value?.startdate = (row as! DateTimeRow).value as NSDate?
+                    path?.startdate = (row as! DateTimeRow).value as NSDate?
                     break
                 case "enddate" :
-                    path?.value?.enddate = (row as! DateTimeRow).value as NSDate?
+                    path?.enddate = (row as! DateTimeRow).value as NSDate?
                     break
                 default:
                     break
                 }
             }
-        }        
-        
+        }
         CrumbsManager.shared.UpdateCurrentPath()
     }
 
     func CrumbsUpdated() {
             self.navigationController?.popViewController(animated: true)
-    }
-    
+    }    
 }

@@ -63,8 +63,7 @@ class NavTableViewController: UITableViewController {
             .bind(to:tableView.rx.items(cellIdentifier: "crumbcell")) { row, path, cell in
                 cell.textLabel?.text = path.title
                 cell.detailTextLabel?.text = path.startdate?.string ?? ""
-            }
-            .disposed(by: disposeBag)
+            }.disposed(by: disposeBag)
         
         tableView.rx.itemSelected.map { [unowned self] ip -> Path in return try self.tableView.rx.model(at: ip)
             }.subscribe(onNext: { [unowned self] (path) in
@@ -73,6 +72,7 @@ class NavTableViewController: UITableViewController {
                     
                     if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {
+                        vc.title = ""
                        // vc.path = path
                         self.showDetailViewController(vc, sender: self)
                     }

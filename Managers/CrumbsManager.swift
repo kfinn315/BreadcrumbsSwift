@@ -8,7 +8,6 @@
     
     import Foundation
     import CoreLocation
-//    import CloudKit
     import CoreData
     import UIKit
     import CoreMotion
@@ -18,7 +17,9 @@
     
     class CrumbsManager: NSObject {//}, CloudKitDelegate {
         public var currentPath : Variable<Path?> = Variable(nil)
-        public var currentPhotoCollection : Variable<[PHAsset]?> = Variable(nil)
+        public var currentPathAlbum : Variable<[PHAsset]?> = Variable(nil)
+        public var currentPathDriver : Driver<Path?>?
+        public var currentAlbumTitle : String?
         
         var pathsManager = PathsManager();
         var pointsManager = PointsManager();
@@ -26,7 +27,7 @@
         var pedometer = CMPedometer()
         var managedObjectContext : NSManagedObjectContext?
         var disposeBag = DisposeBag()
-
+        
         private static var _shared : CrumbsManager?
         
         class var shared : CrumbsManager {
@@ -46,23 +47,25 @@
             
             currentPath.asObservable().bind { [weak self] (path) in
                 self?.updatePhotoCollection(path?.albumId)
-            }.disposed(by: disposeBag)
+                }.disposed(by: disposeBag)
+            
+            currentPathDriver = Driver.just(currentPath.value)
         }
         
         func UpdateCurrentAlbum(collection: PhotoCollection) {
             if currentPath.value == nil {
                 return
             }
-
+            
             updatePhotoCollection(collection.id)
             UpdateCurrentPath(albumid: collection.id)
         }
         
         private func updatePhotoCollection(_ id: String?){
             if id != nil {
-                currentPhotoCollection.value = PhotoManager.getImages(id!)
+                (currentAlbumTitle, currentPathAlbum.value) = PhotoManager.getImages(id!) ?? (nil,nil)
             } else{
-                currentPhotoCollection.value = nil
+                currentPathAlbum.value = nil
             }
         }
         
@@ -71,7 +74,7 @@
             if currentPath.value == nil {
                 return
             }
-
+            
             currentPath.value?.albumId = albumid
         }
         
@@ -85,7 +88,7 @@
                 if self?.currentPath.value == nil {
                     return
                 }
-
+                
                 if let id = self?.currentPath.value?.id {
                     self?.currentPath.value = self?.pathsManager.getPath(id)
                 }
@@ -99,16 +102,16 @@
             var stepcount : Int64 = 0
             var distance : Double = 0.0
             
-                getSteps(start, end, callback: { (data, error) -> (Void) in
-                    if error == nil, let stepdata = data {
-                            print("steps: \(stepdata.numberOfSteps)")
-                            print("est distance: \(stepdata.distance ?? 0)")
-                            stepcount = Int64(stepdata.numberOfSteps)
-                            distance = stepdata.distance?.doubleValue ?? 0
-                    } else {
-                        print(String(describing: error))
-                    }
-                })
+            getSteps(start, end, callback: { (data, error) -> (Void) in
+                if error == nil, let stepdata = data {
+                    print("steps: \(stepdata.numberOfSteps)")
+                    print("est distance: \(stepdata.distance ?? 0)")
+                    stepcount = Int64(stepdata.numberOfSteps)
+                    distance = stepdata.distance?.doubleValue ?? 0
+                } else {
+                    print(String(describing: error))
+                }
+            })
             
             pathsManager.savePath(start: start, end: end, title: title, notes: notes, steps: stepcount, distance: distance, callback: {
                 [weak self] error in
@@ -117,7 +120,7 @@
                 }
             })
         }
-    
+        
         private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {
             guard CMPedometer.isStepCountingAvailable() else{
                 callback(nil, LocalError.failed(message: "step counting is not available"))

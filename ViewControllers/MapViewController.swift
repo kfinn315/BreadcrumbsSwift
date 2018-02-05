@@ -8,103 +8,56 @@
 
 import UIKit
 import MapKit
-import CloudKit
 import Photos
 import RxSwift
 import RxCocoa
+import SwiftSimplify
 
-class MapViewController: UIViewController {
+class MapViewController: UIViewController, MKMapViewDelegate {
+    let LINE_TOLERANCE : Float = 0.000005
+    let ANNOTATION_LAT_DELTA : CLLocationDistance = 0.010
+    let strokeColor = UIColor.red
+    let lineWidth = CGFloat(2.0)
+
     @IBOutlet weak var mapView: MKMapView!
     
     var disposeBag = DisposeBag()
     
     private weak var path : Path?
-    var mapManager : MapViewManager?;
+   // private var mapManager : MapViewManager?;
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        mapManager = MapViewManager(map: mapView);
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
+       // mapManager = MapViewManager(map: mapView);
+        
+        mapView.delegate = self
+        
         CrumbsManager.shared.currentPath.asObservable().subscribe(onNext: { [weak self] path in
-                self?.path = path
+            self?.path = path
             if path != nil {
-                self?.mapManager?.LoadCrumb(path: path!)
+                self?.LoadCrumb(path: path!)
             }
         }).disposed(by: disposeBag)
         
-        CrumbsManager.shared.currentPhotoCollection.asObservable().subscribe(onNext: {[weak self] collection in
+        CrumbsManager.shared.currentPathAlbum.asObservable().subscribe(onNext: {[weak self] collection in
             if let collectionImages = collection {
                 self?.AddImagePoints(collectionImages)
             }
         }).disposed(by: disposeBag)
-
-        //        if path != nil {
-//            mapManager?.LoadCrumb(path: path!)
-//            if path!.albumData != nil {
-//                let assets = PhotoManager.getImages(path!.albumData!.collection)
-//                AddImagePoints(assets)
-//            }
-//        }
     }
     
-    override func viewDidAppear(_ animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
     }
     
     override func viewWillDisappear(_ animated: Bool) {
+        mapView.delegate = nil
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
     
-    //load main crumb and display
-    public func LoadCrumb(path: PathsType){
-        ClearMap();
-        self.navigationController?.navigationItem.title = path.GetTitle()
-        
-        AddPathLine(path);
-        mapManager?.ZoomToFit();
-        
-        //CrumbsManager.shared.currentPath = path;
-    }
-    
-    func ClearMap(){
-        mapView.removeAnnotations(mapView.annotations);
-        mapView.removeOverlays(mapView.overlays)
-    }
-    
-    func AddPathLine(_ path: PathsType){
-        var locations = Array<CLLocation>();
-        
-        if let points = path.GetPoints() {
-            for point in points {
-                locations.append(point);
-                let annotation = MKPointAnnotation();
-                annotation.coordinate = point.coordinate;
-                annotation.title = String(point.coordinate.latitude)+","+String(point.coordinate.longitude);
-                self.mapView.addAnnotation(annotation);
-            }
-        }
-        
-        var coordinates = locations.map({(location: CLLocation) -> CLLocationCoordinate2D in return location.coordinate})
-        let polyline = MKPolyline(coordinates: &coordinates, count: locations.count)
-        
-        self.mapView.add(polyline)
-    }
-//    func AddImageCollection(_ album: PHAssetCollection){
-//            var assets : [PHAsset] = []
-//            let result = PHAsset.fetchAssets(in: album, options: nil)
-//            result.enumerateObjects({ (asset, start, finish) in
-//                if asset.location != nil{
-//                    assets.append(asset)
-//                }
-//            })
-//
-//            AddImagePoints(assets)
-//    }
     func AddImagePoints(_ assets: [PHAsset]){
         DispatchQueue.global(qos: .userInitiated).async{
             for asset in assets {
@@ -115,7 +68,7 @@ class MapViewController: UIViewController {
                         annotation.coordinate = loc.coordinate
                         annotation.title = asset.creationDate?.datestring ?? ""
                         annotation.image = img
-                        
+
                         DispatchQueue.main.async {
                             self?.mapView.addAnnotation(annotation)
                         }
@@ -123,8 +76,108 @@ class MapViewController: UIViewController {
                 }
             }
         }
+    }
+    
+    //MARK:-from manager
+    
+    //load crumb and display
+    public func LoadCrumb(path: Path){
+        ClearMap();
         
-        //self.mapView.add(points)
+        AddLine(crumb: path);
+        ZoomToFit();
+    }
+    
+    
+    func ClearMap(){
+        mapView?.removeAnnotations((mapView?.annotations)!);
+        mapView?.removeOverlays((mapView?.overlays)!)
+    }
+    
+    func ZoomToPoint(_ Point: CLLocation, animated: Bool){
+        var zoomRect = MKMapRectNull;
+        let mappoint = MKMapPointForCoordinate(Point.coordinate);
+        let pointRect = MKMapRectMake(mappoint.x, mappoint.y, 0.1, 0.1);
+        zoomRect = MKMapRectUnion(zoomRect, pointRect);
+        mapView?.setVisibleMapRect(zoomRect, animated: true);
+    }
+    
+    func ZoomToFit(){
+        var zoomRect = MKMapRectNull;
+        for annotation in (mapView?.annotations)!
+        {
+            let annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
+            let pointRect = MKMapRectMake(annotationPoint.x, annotationPoint.y, 0.1, 0.1);
+            zoomRect = MKMapRectUnion(zoomRect, pointRect);
+        }
+        mapView?.setVisibleMapRect(zoomRect, animated: true);
+    }
+    
+    func AddAnnotation(Point: CLLocationCoordinate2D, Title: String){
+        let annotation = MKPointAnnotation();
+        
+        annotation.coordinate = Point
+        annotation.title = Title;
+        
+        mapView?.setCenter(Point, animated: false)
+    }
+    
+    func AddLine(crumb: Path){
+        let points = crumb.getPoints()
+        
+        let coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
+        
+        var simplecoordinates = SwiftSimplify.simplify(coordinates, tolerance: LINE_TOLERANCE)
+        
+        for coordinate in simplecoordinates{
+            let annotation = MKPointAnnotation();
+            annotation.coordinate = coordinate
+            //annotation.title = crumb.title
+            self.mapView?.addAnnotation(annotation);
+        }
+        
+        let polyline = MKPolyline(coordinates: &simplecoordinates, count: simplecoordinates.count)
+        
+        self.mapView?.add(polyline)
+    }
+    
+    //MARK:- MapViewDelegate implementation
+
+    public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        let renderer = MKPolylineRenderer(overlay: overlay)
+        renderer.strokeColor = strokeColor;
+        renderer.lineWidth = lineWidth;
+        
+        return renderer
+    }
+    
+    public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        if annotation is ImageAnnotation {
+            let imageA = annotation as! ImageAnnotation
+            return imageA.getPinView()
+        } else {
+            let view = MKAnnotationView()
+            view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
+            return view;
+        }
+    }
+    
+    public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        var showAnnotations = true
+        
+        if mapView.region.span.latitudeDelta > ANNOTATION_LAT_DELTA || mapView.camera.altitude > 1400.0 {
+            showAnnotations = false
+        }
+        
+        for annotation in mapView.annotations
+        {
+            if showAnnotations {
+                mapView.view(for: annotation)?.isHidden = false
+            }
+            else {
+                mapView.view(for: annotation)?.isHidden = true
+            }
+        }
     }
 }
 
@@ -140,8 +193,7 @@ class ImageAnnotation : MKPointAnnotation {
         pin.pinTintColor = UIColor.darkGray
         pin.canShowCallout = true
         pin.animatesDrop = true
-        let imageview = UIImageView(image: image)
-        pin.leftCalloutAccessoryView = imageview
+        pin.leftCalloutAccessoryView = UIImageView(image: image)
         return pin
     }
 }

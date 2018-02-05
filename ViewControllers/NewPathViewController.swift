@@ -14,110 +14,15 @@ import CloudKit
 import RxCocoa
 import RxSwift
 
-public class NewPathViewController : UITableViewController, CLLocationManagerDelegate, CrumbsDelegate {
-    var LocationManager = CoreLocationManager()
-    var crumbsManager : CrumbsManager?
-    var SaveAlert : UIAlertController?
-    var recording = false
-    var disposeBag = DisposeBag()
-    //var path : Path?
-    var startTime : Date?
-    var stopTime : Date?
+public class RecordViewController : UIViewController,CLLocationManagerDelegate, CrumbsDelegate {
+    var recordingMgr = RecordingManager.shared
     
-    @IBOutlet weak var btnRecord: UIButton!
-    @IBOutlet weak var tfTitle: UITextField!
-    
-    @IBOutlet weak var tfNotes: UITextField!
     public override func viewDidLoad() {
         super.viewDidLoad()
-        
-        crumbsManager = CrumbsManager.shared
-        
-        self.SaveAlert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
-        let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonSaveClicked()})
-        let actionReset = UIAlertAction.init(title: "Reset", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonResetClicked()})
-        self.SaveAlert?.addAction(actionSave)
-        self.SaveAlert?.addAction(actionReset)
-        
-        self.btnRecord.rx.tap.subscribe({ _ in self.buttonStartStopClicked()}).disposed(by: disposeBag)
-        LocationManager.location
-            .drive(onNext: { [unowned self] (cllocation : CLLocation) in
-                //this is called when there's a new location
-                print("location manager didUpdateLocations");
-                
-                self.crumbsManager!.addPointToData(LocalPoint.from(cllocation))
-                
-            }).disposed(by: disposeBag)
     }
     
     public override func viewWillAppear(_ animated: Bool) {
-        
         super.viewWillAppear(animated)
-        
-        recording = false
-        
-        //LocationManager.delegate = self;
-        crumbsManager?.delegate = self;
-        
-        if LocationManager.updatesAreOn() {
-            recording = true
-            btnRecord.titleLabel?.text = "Stop";
-        } else{
-            btnRecord.titleLabel?.text = "Record";
-        }
-        
-        if #available(iOS 11.0, *) {
-            self.navigationItem.largeTitleDisplayMode = .never
-        } else {
-            // Fallback on earlier versions
-        }
-        
-        tableView.reloadData()
-    }
-    
-    func buttonSaveClicked(){
-        LocationManager.stopLocationUpdates();
-        
-        crumbsManager!.SaveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: tfTitle.text ?? "", notes: tfNotes.text );
-    }
-    
-    func buttonDoneClicked(){
-        stopUpdating();
-        self.dismiss(animated: true, completion: nil)
-    }
-    
-    func buttonStartStopClicked(){
-        if recording {
-            stopTime = Date()
-            stopUpdating()
-        }
-        else{
-            startTime = Date()
-            startUpdating();
-        }
-    }
-    
-    private func stopUpdating(){
-        recording = false
-        LocationManager.stopLocationUpdates();
-        btnRecord.setTitle("Record", for: .normal)
-        
-        if let alertcontroller = SaveAlert{
-            present(alertcontroller, animated: true)
-        }
-    }
-    
-    private func startUpdating(){
-        recording = true
-        btnRecord.setTitle("Stop", for: .normal)
-        
-        crumbsManager!.clearPoints()
-        
-        LocationManager.startLocationUpdates();
-    }
-    
-    func buttonResetClicked(){
-       crumbsManager!.clearPoints();        
     }
     
     //delegate callbacks
@@ -137,10 +42,40 @@ public class NewPathViewController : UITableViewController, CLLocationManagerDel
         alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
         self.present(alert, animated: true, completion: nil)
     }
-
+    
     func CrumbSaved(error: Error?) {
         DispatchQueue.main.async {
             self.navigationController?.popViewController(animated: true)
         }
     }
+}
+
+public class NewPathViewController : RecordViewController {
+    
+    @IBOutlet weak var btnStart: UIButton!
+    
+    @IBOutlet weak var segAction: UISegmentedControl!
+
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if recordingMgr.isRecording {
+            //show recording vc
+            if let vc = storyboard?.instantiateViewController(withIdentifier: "recording") {
+                self.navigationController?.pushViewController(vc, animated: false)
+            }
+        } else{
+            btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )
+            segAction.addTarget(self, action: #selector(onActionChanged), for: .valueChanged)
+        }
+    }
+    
+    @objc
+    func startUpdating(){
+        recordingMgr.startUpdating()
+    }
+    func onActionChanged(){
+        let selectedIndex = segAction.selectedSegmentIndex
+        
+    }    
 }
