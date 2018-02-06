@@ -11,7 +11,6 @@ import RxCocoa
 import RxSwift
 import CoreLocation
 
-
 public class RecordingManager {
     private weak var crumbsManager = CrumbsManager.shared
     private var LocationManager = CoreLocationManager()

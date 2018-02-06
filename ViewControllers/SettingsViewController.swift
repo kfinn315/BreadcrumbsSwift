@@ -39,7 +39,7 @@ class SettingsViewController : UIViewController {
         updateDistLabel()
     }
     
-    func updateDistLabel(){
+    @objc func updateDistLabel(){
         lblDistance.text = String(sliderDist.value)+" meters"
     }
     

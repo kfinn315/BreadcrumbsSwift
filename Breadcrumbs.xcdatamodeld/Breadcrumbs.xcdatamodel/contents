@@ -2,6 +2,7 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="13772" systemVersion="" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Path" representedClassName="Path" syncable="YES" codeGenerationType="category">
         <attribute name="albumId" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="coverimg" optional="YES" attributeType="Binary" syncable="YES"/>
         <attribute name="distance" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="duration" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="enddate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
@@ -20,7 +21,7 @@
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Path" positionX="-297" positionY="-639" width="128" height="210"/>
+        <element name="Path" positionX="-297" positionY="-639" width="128" height="225"/>
         <element name="Point" positionX="-477" positionY="-702" width="128" height="105"/>
     </elements>
 </model>

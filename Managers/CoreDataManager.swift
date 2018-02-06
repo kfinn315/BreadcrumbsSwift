@@ -34,7 +34,7 @@ class PointsManager : CoreDataManager {
             let point = Point(context: localcontext!)
             point.latitude = localpoint.latitude
             point.longitude = localpoint.longitude
-            point.timestamp = localpoint.timestamp
+            point.timestamp = localpoint.timestamp as Date?
             point.id = localpoint.timestamp?.string
             
             if localcontext!.hasChanges {
@@ -131,8 +131,8 @@ class PathsManager : CoreDataManager {
                 print("error "+error.localizedDescription)
             }
             
-            path.startdate = start as NSDate
-            path.enddate = end as NSDate
+            path.startdate = start
+            path.enddate = end
             path.title = title
             path.notes = notes ?? ""
             path.distance = distance ?? 0

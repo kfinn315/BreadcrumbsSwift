@@ -17,8 +17,10 @@ extension NSDate{
     }
 }
 
-extension Date{
-    var datestring: String{
-        return (self as NSDate).string
+extension Date{   
+    var string: String{
+        let dateFormatter = DateFormatter();
+        dateFormatter.dateFormat = "MM/dd/YY hh:mm"
+        return dateFormatter.string(from: self as Date)
     }
 }

@@ -44,8 +44,8 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         id = (entity.value(forKey: "id") as? String) ?? NSDate().string
         title = entity.value(forKey: "title") as? String
         notes = entity.value(forKey: "notes") as? String
-        startdate = entity.value(forKey: "startdate") as? NSDate
-        enddate = entity.value(forKey: "enddate") as? NSDate
+        startdate = entity.value(forKey: "startdate") as? Date
+        enddate = entity.value(forKey: "enddate") as? Date
         duration = entity.value(forKey: "duration") as! Float
         distance = entity.value(forKey: "distance") as! Double
         stepcount = (entity.value(forKey: "stepcount") as! Int64)

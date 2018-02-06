@@ -10,6 +10,7 @@ import MapKit
 import UIKit
 import RxSwift
 import RxCocoa
+import Photos
 
 public class PathDetailViewController : UIViewController {
     private weak var crumbsManager = CrumbsManager.shared
@@ -36,10 +37,13 @@ public class PathDetailViewController : UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         
-        ivTop.setRounded()
-                
         crumbsManager?.currentPath.asObservable().subscribe(onNext: {[weak self] path in
-            self?.title = path?.title
+            if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
+            PHImageManager.default().requestImage(for: firstasset, resultHandler: { (img, dict) in
+                self?.ivTop.setRounded()
+                self?.ivTop.image = img
+            })
+            }
             
             guard path != nil else{
                 print("error: currentPath is nil")
@@ -60,6 +64,8 @@ public class PathDetailViewController : UIViewController {
     
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        ivTop.setRounded()
         
         if #available(iOS 11.0, *) {
             self.navigationItem.largeTitleDisplayMode = .never

@@ -65,17 +65,12 @@ public class NewPathViewController : RecordViewController {
                 self.navigationController?.pushViewController(vc, animated: false)
             }
         } else{
-            btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )
-            segAction.addTarget(self, action: #selector(onActionChanged), for: .valueChanged)
+            btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )         
         }
     }
     
     @objc
     func startUpdating(){
-        recordingMgr.startUpdating()
+        recordingMgr.startUpdating(with: LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking)
     }
-    func onActionChanged(){
-        let selectedIndex = segAction.selectedSegmentIndex
-        
-    }    
 }

@@ -18,19 +18,14 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     let ANNOTATION_LAT_DELTA : CLLocationDistance = 0.010
     let strokeColor = UIColor.red
     let lineWidth = CGFloat(2.0)
-
-    @IBOutlet weak var mapView: MKMapView!
-    
     var disposeBag = DisposeBag()
     
+    @IBOutlet weak var mapView: MKMapView!
+    
     private weak var path : Path?
-   // private var mapManager : MapViewManager?;
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-       // mapManager = MapViewManager(map: mapView);
-        
         mapView.delegate = self
         
         CrumbsManager.shared.currentPath.asObservable().subscribe(onNext: { [weak self] path in
@@ -51,11 +46,11 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        mapView.delegate = nil
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        mapView.delegate = nil
     }
     
     func AddImagePoints(_ assets: [PHAsset]){
@@ -66,7 +61,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
                         [weak self] (img, dict) in
                         let annotation = ImageAnnotation()
                         annotation.coordinate = loc.coordinate
-                        annotation.title = asset.creationDate?.datestring ?? ""
+                        annotation.title = asset.creationDate?.string ?? ""
                         annotation.image = img
 
                         DispatchQueue.main.async {
@@ -87,7 +82,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         AddLine(crumb: path);
         ZoomToFit();
     }
-    
     
     func ClearMap(){
         mapView?.removeAnnotations((mapView?.annotations)!);
@@ -156,29 +150,25 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             let imageA = annotation as! ImageAnnotation
             return imageA.getPinView()
         } else {
-            let view = MKAnnotationView()
-            view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
-            return view;
+//            let view = MKAnnotationView()
+//            view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
+//            return view;
+            return nil
         }
     }
     
-    public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        var showAnnotations = true
-        
-        if mapView.region.span.latitudeDelta > ANNOTATION_LAT_DELTA || mapView.camera.altitude > 1400.0 {
-            showAnnotations = false
-        }
-        
-        for annotation in mapView.annotations
-        {
-            if showAnnotations {
-                mapView.view(for: annotation)?.isHidden = false
-            }
-            else {
-                mapView.view(for: annotation)?.isHidden = true
-            }
-        }
-    }
+//    public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+//        var showAnnotations = true
+//
+//        if mapView.region.span.latitudeDelta > ANNOTATION_LAT_DELTA || mapView.camera.altitude > 1400.0 {
+//            showAnnotations = false
+//        }
+//
+//        for annotation in mapView.annotations
+//        {
+//                mapView.view(for: annotation)?.isHidden = !showAnnotations
+//        }
+//    }
 }
 
 class ImageAnnotation : MKPointAnnotation {
@@ -197,4 +187,3 @@ class ImageAnnotation : MKPointAnnotation {
         return pin
     }
 }
-

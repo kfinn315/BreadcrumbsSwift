@@ -47,9 +47,11 @@
             
             currentPath.asObservable().bind { [weak self] (path) in
                 self?.updatePhotoCollection(path?.albumId)
+                
                 }.disposed(by: disposeBag)
             
             currentPathDriver = Driver.just(currentPath.value)
+            
         }
         
         func UpdateCurrentAlbum(collection: PhotoCollection) {
@@ -106,7 +108,7 @@
                 if error == nil, let stepdata = data {
                     print("steps: \(stepdata.numberOfSteps)")
                     print("est distance: \(stepdata.distance ?? 0)")
-                    stepcount = Int64(stepdata.numberOfSteps)
+                    stepcount = Int64(truncating: stepdata.numberOfSteps)
                     distance = stepdata.distance?.doubleValue ?? 0
                 } else {
                     print(String(describing: error))

@@ -10,7 +10,7 @@ import CoreLocation
 import RxSwift
 import RxCocoa
 
-public enum LocationAccuracy {
+public enum LocationAccuracy : Int{
     case walking
     case running
     case biking

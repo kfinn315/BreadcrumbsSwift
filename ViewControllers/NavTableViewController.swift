@@ -6,12 +6,8 @@
 //  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
-import Foundation
 import CoreData
 import UIKit
-import MapKit
-import CloudKit
-import CoreGraphics
 import RxCocoa
 import RxSwift
 import RxCoreData
@@ -40,23 +36,24 @@ class NavTableViewController: UITableViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
+
         if #available(iOS 11.0, *) {
-            self.navigationItem.largeTitleDisplayMode = .always
+            self.navigationController?.navigationBar.prefersLargeTitles = true
         } else {
             // Fallback on earlier versions
         }
-//
-//        do{
-//            try persistentContainer.viewContext.rx.update(Path())
-//        } catch{
-//
-//        }
         
-        //try{persistentContainer.ba}
-        tableView.reloadData()
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        if #available(iOS 11.0, *) {
+            self.navigationController?.navigationBar.prefersLargeTitles = false
+        } else {
+            // Fallback on earlier versions
+        }
+    }
     func configureTableView(){
         //tableView.isEditing = true
         NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
@@ -73,7 +70,7 @@ class NavTableViewController: UITableViewController {
                     if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {
                         vc.title = ""
-                       // vc.path = path
+                        // vc.path = path
                         self.showDetailViewController(vc, sender: self)
                     }
                 }

@@ -6,6 +6,7 @@
 //  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
+import Foundation
 import UIKit
 import MapKit
 import CoreData
@@ -17,8 +18,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
 
-//        ((window!.rootViewController as! UINavigationController).topViewController as! NavTableViewController).managedObjectContext = self.managedObjectContext
-//
         if(UIApplicationLaunchOptionsKey.userActivityType == UIApplicationLaunchOptionsKey.location){
             let manager = CoreLocationManager();
             manager.startLocationUpdates();
@@ -26,6 +25,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         UIPageControl.appearance().pageIndicatorTintColor = UIColor.white
         UIPageControl.appearance().currentPageIndicatorTintColor = UIColor.black
+        
+        setNavColor()
         
         return true
     }
@@ -57,33 +58,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         return urls.last!
     }()
-    
-//    lazy var managedObjectModel: NSManagedObjectModel = {
-//        let modelURL = Bundle.main.url(forResource: "Model", withExtension: "momd")!
-//        return NSManagedObjectModel(contentsOf: modelURL)!
-//    }()
-//
-//    lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
-//        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: self.managedObjectModel)
-//        let url = self.applicationDocumentsDirectory.appendingPathComponent("BreadcrumbsSwift")
-//        var failureReason = "There was an error creating or loading the application's saved data."
-//
-//        do {
-//            try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: url, options: nil)
-//        } catch {
-//            var dict = [String: Any]()
-//            dict[NSLocalizedDescriptionKey] = "Failed to initialize the application's saved data"
-//            dict[NSLocalizedFailureReasonErrorKey] = failureReason
-//
-//            dict[NSUnderlyingErrorKey] = error as NSError
-//            let wrappedError = NSError(domain: "YOUR_ERROR_DOMAIN", code: 9999, userInfo: dict)
-//            NSLog("Unresolved error \(wrappedError), \(wrappedError.userInfo)")
-//            abort()
-//        }
-//
-//        return coordinator
-//    }()
-//
+ 
     @available(iOS 10.0, *)
     lazy var managedObjectContext: NSManagedObjectContext = {
         return self.persistentContainer.newBackgroundContext()
@@ -124,24 +99,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return container
     }()
     
-    // MARK: - Core Data Saving support
-    
-//    @available(iOS 10.0, *)
-//    func saveContext () {
-//        let context = persistentContainer.viewContext
-//        if context.hasChanges {
-//            do {
-//                try context.save()
-//            } catch {
-//                // Replace this implementation with code to handle the error appropriately.
-//                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-//                let nserror = error as NSError
-//                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
-//            }
-//        }
-//    }
-
-
-
+    func setNavColor(){
+        let primarycolor = UIColor(rgb: 0xFFFC79)
+        let secondarycolor = UIColor(rgb: 0x3854FF)
+        // Override point for customization after application launch.
+        UINavigationBar.appearance().barTintColor = primarycolor
+        UINavigationBar.appearance().tintColor = secondarycolor
+        UINavigationBar.appearance().backgroundColor = primarycolor
+//        UINavigationBar.appearance().titleTextAttributes = [NSAttributedStringKey.foregroundColor:UIColor.white]
+    }
 }
 

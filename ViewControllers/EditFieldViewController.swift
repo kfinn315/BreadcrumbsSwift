@@ -118,10 +118,10 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
                     path?.locations = (row as! TextRow).value
                     break
                 case "startdate" :
-                    path?.startdate = (row as! DateTimeRow).value as NSDate?
+                    path?.startdate = (row as! DateTimeRow).value
                     break
                 case "enddate" :
-                    path?.enddate = (row as! DateTimeRow).value as NSDate?
+                    path?.enddate = (row as! DateTimeRow).value
                     break
                 default:
                     break

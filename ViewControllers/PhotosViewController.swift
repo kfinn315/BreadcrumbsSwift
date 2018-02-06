@@ -137,8 +137,7 @@ class PhotosViewController: UICollectionViewController {
         } else{
             showFull(assets?[indexPath.row])
         }
-    }
-    
+    }    
     func showFull(_ asset: PHAsset?){
         guard asset != nil else{ return }
 
@@ -151,7 +150,7 @@ class PhotosViewController: UICollectionViewController {
         let crumbsManager = CrumbsManager.shared
         let path = crumbsManager.currentPath
         if let start = path.value?.startdate, let end = path.value?.enddate {
-            PhotoManager.createTimespanAlbum(name: "\(path.value?.title ?? "breadcrumb") - \((start as Date).datestring)", start: start as Date, end: end as Date, completionHandler: {
+            PhotoManager.createTimespanAlbum(name: "\(path.value?.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: {
                 (collection, error) in
                 if collection != nil {
                     _ = crumbsManager.UpdateCurrentAlbum(collection: collection!)

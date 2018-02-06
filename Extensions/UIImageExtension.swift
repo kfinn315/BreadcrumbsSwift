@@ -5,7 +5,6 @@
 //  Created by Kevin Finn on 5/23/17.
 //
 
-import Foundation
 import UIKit
 import CoreGraphics
 
@@ -36,3 +35,55 @@ extension UIImageView {
         self.layer.masksToBounds = true
     }
 }
+
+
+extension UIViewController {
+    func setClearNav(tintColor: UIColor = UIColor.HYP_LinkBlue){
+        //        let color = UIColor.HYP_LinkBlue
+        self.navigationController?.navigationBar.isTranslucent = true
+        self.navigationController?.navigationBar.barTintColor = UIColor.clear
+        self.navigationController?.navigationBar.tintColor = tintColor
+        self.navigationController?.navigationBar.backgroundColor = .clear
+            self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedStringKey.foregroundColor:tintColor]
+        self.navigationItem.leftBarButtonItem?.tintColor = tintColor
+        self.navigationItem.rightBarButtonItem?.tintColor = tintColor
+        self.navigationController?.navigationBar.shadowImage = UIImage()
+        self.navigationController?.navigationBar.setBackgroundImage(UIImage(), for: .default)
+    }
+}
+
+extension UIColor {
+    static let HYP_Green : UIColor = UIColor.init(rgb:0x00AB84)
+    static let HYP_GreenDark : UIColor = UIColor.init(rgb:0x009a77)
+    
+    static let HYP_DarkGray : UIColor = UIColor.init(rgb: 0x666666)
+    static let HYP_MidGray : UIColor = UIColor.init(rgb: 0x999999)
+    static let HYP_LightGray : UIColor = UIColor.init(rgb: 0xcccccc)
+    static let HYP_OffWhite: UIColor = UIColor.init(rgb: 0xe6e6e6)
+    static let HYP_White: UIColor = UIColor.init(rgb: 0xf2f2f2)
+    
+    static let HYP_BtnGray : UIColor = UIColor.init(rgb:0xc1c1c1)
+    static let HYP_BtnGrayDark : UIColor = UIColor.init(rgb:0xbbbbbb)
+    
+    static let HYP_Red : UIColor = UIColor.init(rgb:0xC62325)
+    static let HYP_LinkBlue : UIColor = UIColor.init(rgb: 0x0952E4)
+    
+    convenience init(red: Int, green: Int, blue: Int) {
+        assert(red >= 0 && red <= 255, "Invalid red component")
+        assert(green >= 0 && green <= 255, "Invalid green component")
+        assert(blue >= 0 && blue <= 255, "Invalid blue component")
+        
+        self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: 1.0)
+    }
+    
+    convenience init(rgb: Int) {
+        self.init(
+            red: (rgb >> 16) & 0xFF,
+            green: (rgb >> 8) & 0xFF,
+            blue: rgb & 0xFF
+        )
+    }
+    
+}
+
+

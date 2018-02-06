@@ -33,7 +33,7 @@ public class Point: NSManagedObject, Codable {
         }
         latitude = lat
         longitude = lng
-        timestamp = time
+        timestamp = time as Date
     }
     
     public static func from(_ loc: CLLocation) -> Point{
@@ -58,7 +58,7 @@ public class Point: NSManagedObject, Codable {
         self.latitude = try container.decode(Double.self, forKey: .latitude) // extracting the data
         self.id = try container.decode(String.self, forKey: .id) // extracting the data
         self.longitude = try container.decode(Double.self, forKey: .longitude) // extracting the data
-        self.timestamp = try container.decode(Date.self, forKey: .timestamp) as NSDate
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp) as Date
     }
     
     public func encode(to encoder: Encoder) throws
