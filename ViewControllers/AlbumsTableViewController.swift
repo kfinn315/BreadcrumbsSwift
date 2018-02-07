@@ -13,7 +13,6 @@ import RxSwift
 import RxCocoa
 import RxDataSources
 
-
 public class AlbumsTableViewController : UITableViewController {
     var disposeBag = DisposeBag()
     

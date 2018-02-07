@@ -11,6 +11,8 @@ import UIKit
 import MapKit
 import CoreData
 
+let cornerRadius = 10
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
@@ -23,7 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             manager.startLocationUpdates();
         }
         
-        UIPageControl.appearance().pageIndicatorTintColor = UIColor.white
+        UIPageControl.appearance().pageIndicatorTintColor = UIColor(rgb: 0xFF9300)
         UIPageControl.appearance().currentPageIndicatorTintColor = UIColor.black
         
         setNavColor()
@@ -62,12 +64,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     @available(iOS 10.0, *)
     lazy var managedObjectContext: NSManagedObjectContext = {
         return self.persistentContainer.newBackgroundContext()
-//
-//        let coordinator = self.persistentContainer.persistentStoreCoordinator
-//        //let coordinator = self.persistentStoreCoordinator
-//        var managedObjectContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-//        managedObjectContext.persistentStoreCoordinator = coordinator
-//        return managedObjectContext
     }()
 
 
@@ -100,13 +96,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }()
     
     func setNavColor(){
-        let primarycolor = UIColor(rgb: 0xFFFC79)
-        let secondarycolor = UIColor(rgb: 0x3854FF)
-        // Override point for customization after application launch.
+        let primarycolor = UIColor(rgb: 0xFFFC79) //yellow
+        let secondarycolor = UIColor(rgb: 0x3854FF) //blue
+
         UINavigationBar.appearance().barTintColor = primarycolor
         UINavigationBar.appearance().tintColor = secondarycolor
         UINavigationBar.appearance().backgroundColor = primarycolor
-//        UINavigationBar.appearance().titleTextAttributes = [NSAttributedStringKey.foregroundColor:UIColor.white]
+        UINavigationBar.appearance().titleTextAttributes = [NSAttributedStringKey.foregroundColor: secondarycolor]
     }
 }
 

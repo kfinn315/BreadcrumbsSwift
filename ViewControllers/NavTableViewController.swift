@@ -6,6 +6,7 @@
 //  Copyright © 2017 Kevin Finn. All rights reserved.
 //
 
+import Foundation
 import CoreData
 import UIKit
 import RxCocoa
@@ -36,7 +37,7 @@ class NavTableViewController: UITableViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
+        
         if #available(iOS 11.0, *) {
             self.navigationController?.navigationBar.prefersLargeTitles = true
         } else {
@@ -55,32 +56,36 @@ class NavTableViewController: UITableViewController {
         }
     }
     func configureTableView(){
-        //tableView.isEditing = true
-        NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
-            .bind(to:tableView.rx.items(cellIdentifier: "crumbcell")) { row, path, cell in
-                cell.textLabel?.text = path.title
-                cell.detailTextLabel?.text = path.startdate?.string ?? ""
-            }.disposed(by: disposeBag)
+        let datasource = RxTableViewSectionedAnimatedDataSource<AnimatableSectionModel<String,Path>>(configureCell:
+        { (_, tv:UITableView, indexPath:IndexPath, item:Path) in
+            let cell = self.tableView.dequeueReusableCell(withIdentifier: "crumbcell", for: indexPath)
+            cell.textLabel?.text = (item.title?.isEmpty ?? false) ? "-" : item.title
+            cell.detailTextLabel?.text = item.startdate?.timestring
+            return cell
+        })
+        datasource.canEditRowAtIndexPath = {_,_ in
+            true
+        }
+        datasource.titleForHeaderInSection = { ds, index in return ds.sectionModels[index].identity }
+        NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)]).map(mapPathsToSections).bind(to: tableView.rx.items(dataSource: datasource)).disposed(by: disposeBag)
         
-        tableView.rx.itemSelected.map { [unowned self] ip -> Path in return try self.tableView.rx.model(at: ip)
+        tableView.rx.itemSelected.map { [unowned self] ip -> Path in
+            return try self.tableView.rx.model(at: ip)
             }.subscribe(onNext: { [unowned self] (path) in
                 do {
                     CrumbsManager.shared.currentPath.value = path
                     
                     if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {
-                        vc.title = ""
-                        // vc.path = path
                         self.showDetailViewController(vc, sender: self)
                     }
                 }
             }).disposed(by: disposeBag)
         
-        
         self.tableView.rx.itemDeleted.map { [unowned self] ip -> Path in
             return try self.tableView.rx.model(at: ip)
-            }
-            .subscribe(onNext: { (path) in
+            }.subscribe(onNext: { (path) in
+                //TODO: add delete confirmation alert
                 do {
                     try NavTableViewController.managedObjectContext.rx.delete(path)
                 } catch {
@@ -88,13 +93,32 @@ class NavTableViewController: UITableViewController {
                 }
             })
             .disposed(by: disposeBag)
-        
     }
-    
+//    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+//        
+//    }
+    private func mapPathsToSections(_ paths: [Path]) -> [AnimatableSectionModel<String, Path>]{ //group paths into sections by date and sort by date descending
+        var dates : [Date : [Path]] = [:]
+        for path in paths {
+            if let startdate = path.startdate {
+                let day = Calendar.current.startOfDay(for: startdate)
+                if dates[day] == nil {
+                    dates[day] = []
+                }
+                dates[day]?.append(path)
+            }
+        }
+        let sorteddates = dates.sorted(by: { (o1, o2) -> Bool in
+            return o1.key > o2.key
+        })
+        let result = sorteddates.reduce(into: [AnimatableSectionModel<String, Path>](), { (result, record) in
+            result.append(AnimatableSectionModel(model: record.key.datestring, items: record.value))
+        })
+        
+        return result
+    }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         
     }
 }
-
-

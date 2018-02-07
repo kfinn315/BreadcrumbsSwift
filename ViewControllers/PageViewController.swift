@@ -9,8 +9,15 @@
 import UIKit
 
 class PageViewController : UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
-    lazy var pages : [UIViewController?] = []
-    var currentIndex = 0
+    private(set) lazy var orderedViewControllers: [UIViewController] = {
+        if let storyboard = self.storyboard {
+            return [storyboard.instantiateViewController(withIdentifier: "Detail"),
+                    storyboard.instantiateViewController(withIdentifier: "MapVC"),
+                    storyboard.instantiateViewController(withIdentifier: "Photos Table")]
+        }
+        
+        return []
+    }()
     
     @IBOutlet weak var btnEdit: UIBarButtonItem!
     
@@ -19,17 +26,15 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     }
     
     override func viewDidLoad() {
-        let vc0 = storyboard?.instantiateViewController(withIdentifier: "Detail")
-        let vc1 = storyboard?.instantiateViewController(withIdentifier: "MapVC")
-        let vc2 = storyboard?.instantiateViewController(withIdentifier: "Photos Table")
-        pages = [vc0,vc1,vc2]
-        
         self.dataSource = self
-        self.setViewControllers([pages[0]!], direction: .forward, animated: true, completion: nil)
-        
         self.delegate = self
-        
-       // btnEdit.action = #selector(editPath)
+        self.orderedViewControllers[0].view.tag = 0
+        self.orderedViewControllers[1].view.tag = 1
+        self.orderedViewControllers[2].view.tag = 2
+
+        if let vc = orderedViewControllers.first {
+            self.setViewControllers([vc], direction: .forward, animated: true, completion: nil)
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -43,52 +48,32 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         }
     }
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
-        if viewController is MapViewController {
-            return pages[0]
+        let nextindex = viewController.view.tag - 1
+      
+        if nextindex >= 0 {
+            return orderedViewControllers[nextindex]
         }
-        
-        if viewController is PhotosViewController {
-            return pages[1]
-        }
-        
         return nil
     }
     
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
-        if viewController is PathDetailViewController {
-            return pages[1]
-        }
-
-        if viewController is MapViewController {
-            return pages[2]
+        let nextindex = viewController.view.tag + 1
+        
+        if nextindex < orderedViewControllers.count {
+            return orderedViewControllers[nextindex]
         }
         
         return nil
     }
     
     func presentationCount(for pageViewController: UIPageViewController) -> Int {
-        return pages.count
+        return orderedViewControllers.count
     }
     
     func presentationIndex(for pageViewController: UIPageViewController) -> Int {
-        return currentIndex
+        return pageViewController.viewControllers?.first?.view?.tag ?? 0
     }
-    
 
-    func pageViewController(_ pageViewController: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
-        if pendingViewControllers.first is PathDetailViewController {
-            currentIndex = 0
-        }
-        
-        if pendingViewControllers.first is MapViewController {
-            currentIndex = 1
-        }
-        
-        if pendingViewControllers.first is PhotosViewController {
-            currentIndex = 2
-        }
-    }
-    
     @objc func editPath(){
         self.navigationController?.pushViewController(EditPathViewController(), animated: true)
     }

@@ -21,6 +21,19 @@ extension Date{
     var string: String{
         let dateFormatter = DateFormatter();
         dateFormatter.dateFormat = "MM/dd/YY hh:mm"
-        return dateFormatter.string(from: self as Date)
+        return dateFormatter.string(from: self)
+    }
+    
+    var datestring: String{
+        let dateFormatter = DateFormatter();
+        dateFormatter.dateFormat = "MM/dd/YY"
+        return dateFormatter.string(from: self)
+    }
+    
+    var timestring: String{
+        
+        let dateFormatter = DateFormatter();
+        dateFormatter.dateFormat = "hh:mm a"
+        return dateFormatter.string(from: self)
     }
 }

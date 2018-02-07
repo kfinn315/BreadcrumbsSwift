@@ -26,7 +26,7 @@ public class PhotoCollection {
 
             //get first image to use as collection thumbnail
             if let thumbnailAsset = assets.firstObject {
-                PHImageManager.default().requestImage(for: thumbnailAsset, resultHandler: { [weak self] (img, dict) in
+                PHImageManager.default().requestImageThumbnail(for: thumbnailAsset, resultHandler: { [weak self] (img, dict) in
                     self?.thumbnail = img
                 })
             } else{
@@ -118,7 +118,7 @@ class PhotoManager{
 }
 
 extension PHImageManager {
-    func requestImage(for phasset: PHAsset, resultHandler: @escaping (UIImage?, [AnyHashable:Any]?)->Void){
+    func requestImageThumbnail(for phasset: PHAsset, resultHandler: @escaping (UIImage?, [AnyHashable:Any]?)->Void){
         self.requestImage(for: phasset, targetSize: CGSize(width: 50, height: 50), contentMode: .aspectFill, options: nil, resultHandler: resultHandler)
     }
 }

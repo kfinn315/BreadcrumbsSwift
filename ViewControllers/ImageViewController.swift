@@ -22,11 +22,9 @@ public class ImageViewController : UIViewController {
         assetSize = self.imageView.frame.size
         
         if asset != nil {
-            PHImageManager.default().requestImage(for: asset!, targetSize: self.assetSize, contentMode: .aspectFit, options: nil, resultHandler: {(
-                result, info)
-                in
+            PHImageManager.default().requestImage(for: asset!, targetSize: self.assetSize, contentMode: .aspectFit, options: nil, resultHandler: { [weak self] (result, info) in
                     if result != nil {
-                        self.imageView.image = result!
+                        self?.imageView.image = result!
                     }
             })
         }

@@ -19,6 +19,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     let strokeColor = UIColor.red
     let lineWidth = CGFloat(2.0)
     var disposeBag = DisposeBag()
+    let pinAnnotationImageView = UIImage.circle(diameter: CGFloat(10), color: UIColor.orange);
     
     @IBOutlet weak var mapView: MKMapView!
     
@@ -26,8 +27,9 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        mapView.delegate = self
         
+        mapView.delegate = self
+
         CrumbsManager.shared.currentPath.asObservable().subscribe(onNext: { [weak self] path in
             self?.path = path
             if path != nil {
@@ -37,7 +39,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         CrumbsManager.shared.currentPathAlbum.asObservable().subscribe(onNext: {[weak self] collection in
             if let collectionImages = collection {
-                self?.AddImagePoints(collectionImages)
+                self?.AddImageAnnotations(collectionImages)
             }
         }).disposed(by: disposeBag)
     }
@@ -53,22 +55,22 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         mapView.delegate = nil
     }
     
-    func AddImagePoints(_ assets: [PHAsset]){
+    func AddImageAnnotations(_ assets: [PHAsset]){
         DispatchQueue.global(qos: .userInitiated).async{
+            var annotations : [ImageAnnotation] = []
             for asset in assets {
                 if let loc = asset.location {
-                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: {
-                        [weak self] (img, dict) in
+                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: { (img, dict) in
                         let annotation = ImageAnnotation()
                         annotation.coordinate = loc.coordinate
                         annotation.title = asset.creationDate?.string ?? ""
                         annotation.image = img
-
-                        DispatchQueue.main.async {
-                            self?.mapView.addAnnotation(annotation)
-                        }
+                        annotations.append(annotation)
                     })
                 }
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.mapView.addAnnotations(annotations)
             }
         }
     }
@@ -80,7 +82,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         ClearMap();
         
         AddLine(crumb: path);
-        ZoomToFit();
+       // ZoomToFit();
     }
     
     func ClearMap(){
@@ -97,6 +99,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     func ZoomToFit(){
+      
         var zoomRect = MKMapRectNull;
         for annotation in (mapView?.annotations)!
         {
@@ -121,19 +124,30 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         let coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
         
+        //simplify coordinates
         var simplecoordinates = SwiftSimplify.simplify(coordinates, tolerance: LINE_TOLERANCE)
         
-        for coordinate in simplecoordinates{
-            let annotation = MKPointAnnotation();
-            annotation.coordinate = coordinate
-            //annotation.title = crumb.title
-            self.mapView?.addAnnotation(annotation);
+        //add annotation to first and last coords
+        if let firstcoord = simplecoordinates.first {
+            let firstpin = MKPointAnnotation()
+            firstpin.coordinate = firstcoord
+            self.mapView?.addAnnotation(firstpin)
+        }
+        if simplecoordinates.count > 1, let lastcoord = simplecoordinates.last {
+            let lastpin = MKPointAnnotation()
+            lastpin.coordinate = lastcoord
+            self.mapView?.addAnnotation(lastpin)
         }
         
         let polyline = MKPolyline(coordinates: &simplecoordinates, count: simplecoordinates.count)
-        
+        setVisibleMapArea(polyline: polyline, edgeInsets: UIEdgeInsetsMake(25.0,25.0,25.0,25.0))
         self.mapView?.add(polyline)
     }
+    
+    func setVisibleMapArea(polyline: MKPolyline, edgeInsets: UIEdgeInsets, animated: Bool = false) {
+        mapView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: edgeInsets, animated: animated)
+    }
+
     
     //MARK:- MapViewDelegate implementation
 
@@ -150,10 +164,9 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             let imageA = annotation as! ImageAnnotation
             return imageA.getPinView()
         } else {
-//            let view = MKAnnotationView()
-//            view.image = UIImage.circle(diameter: CGFloat(10),color: UIColor.orange);
-//            return view;
-            return nil
+            let view = MKAnnotationView()
+            view.image = pinAnnotationImageView
+            return view;
         }
     }
     

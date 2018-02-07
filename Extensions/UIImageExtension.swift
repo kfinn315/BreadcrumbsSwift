@@ -7,6 +7,9 @@
 
 import UIKit
 import CoreGraphics
+import RxSwift
+import RxCocoa
+import RxDataSources
 
 extension UIImage {
     class func circle(diameter: CGFloat, color: UIColor) -> UIImage {
@@ -85,5 +88,20 @@ extension UIColor {
     }
     
 }
+
+
+extension UIView {
+    @IBInspectable var cornerRadius: CGFloat {
+        get {
+            return layer.cornerRadius
+        }
+        set {
+            layer.cornerRadius = newValue
+            layer.masksToBounds = newValue > 0
+        }
+    }
+}
+
+
 
 

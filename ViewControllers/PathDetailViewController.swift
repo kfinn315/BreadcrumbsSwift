@@ -39,10 +39,12 @@ public class PathDetailViewController : UIViewController {
         
         crumbsManager?.currentPath.asObservable().subscribe(onNext: {[weak self] path in
             if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
-            PHImageManager.default().requestImage(for: firstasset, resultHandler: { (img, dict) in
+                if let size = self?.ivTop.frame.size {
+                PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, dict) in
                 self?.ivTop.setRounded()
                 self?.ivTop.image = img
-            })
+                })
+                }
             }
             
             guard path != nil else{
@@ -59,7 +61,7 @@ public class PathDetailViewController : UIViewController {
                 self?.lblDuration.text = path?.duration.formatted
             }
         }).disposed(by: disposeBag)
-        
+     
     }
     
     public override func viewWillAppear(_ animated: Bool) {
