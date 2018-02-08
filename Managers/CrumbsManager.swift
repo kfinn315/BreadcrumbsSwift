@@ -15,8 +15,8 @@
     import RxSwift
     import Photos
     
-    class CrumbsManager: NSObject {//}, CloudKitDelegate {
-        public var currentPath : Variable<Path?> = Variable(nil)
+    class CrumbsManager {
+        private var currentPath : Variable<Path?> = Variable(nil)
         public var currentPathAlbum : Variable<[PHAsset]?> = Variable(nil)
         public var currentPathDriver : Driver<Path?>?
         public var currentAlbumTitle : String?
@@ -30,6 +30,10 @@
         
         private static var _shared : CrumbsManager?
         
+        public var CurrentPath: Path? {
+            return currentPath.value
+        }
+        
         class var shared : CrumbsManager {
             if _shared == nil {
                 _shared = CrumbsManager()
@@ -38,20 +42,20 @@
             return _shared!
         }
         
-        private override init() {
-            super.init();
+        private init() {
             
             if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
                 self.managedObjectContext = appDelegate.managedObjectContext
             }
             
-            currentPath.asObservable().bind { [weak self] (path) in
-                self?.updatePhotoCollection(path?.albumId)
-                
-                }.disposed(by: disposeBag)
-            
-            //currentPathDriver = currentPath.asDriver().asDriver(onErrorJustReturn: nil)
-            
+//            currentPath.asObservable().bind { [weak self] (path) in
+//                self?.updatePhotoCollection(path?.albumId)
+//
+//                }.disposed(by: disposeBag)
+//
+            currentPathDriver = currentPath.asObservable().asDriver(onErrorJustReturn: nil)
+            currentPathDriver?.drive(onNext: { [weak self] path in self?.updatePhotoCollection(path?.albumId)
+            }).disposed(by: disposeBag)
         }
         
         func setCoverImg(_ img: UIImage){
@@ -78,6 +82,10 @@
             } else{
                 currentPathAlbum.value = nil
             }
+        }
+        
+        public func setCurrentPath(_ path: Path?){
+            currentPath.value = path
         }
         
         //returns number of paths updated

@@ -14,7 +14,8 @@ import UIKit
 @objc(Point)
 public class Point: NSManagedObject, Codable {
     var entitydescription : NSEntityDescription{
-        return NSEntityDescription.entity(forEntityName: "Point", in: ((UIApplication.shared.delegate as? AppDelegate)?.managedObjectContext)!)!
+        return NSEntityDescription.entity(forEntityName: "Point", in: NavTableViewController.managedObjectContext)!
+        
     }
     
     @objc

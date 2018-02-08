@@ -92,7 +92,7 @@ class PointsManager : CoreDataManager {
             }
             
             print("fetched "+String(describing: points.count)+" points")
-           
+            
         }
         
         return points
@@ -120,9 +120,23 @@ class PathsManager : CoreDataManager {
             
             print("fetched "+String(describing: points.count)+" points")
             
-            
             let path = Path(context: localcontext!)
             
+            //get location names
+            if let point1 = points.first {
+                CLGeocoder().reverseGeocodeLocation(CLLocation(point1.coordinates), completionHandler: {
+                    [weak self] (placemarks, error) in
+                    guard let locality = placemarks?[0].locality, path.id != nil  else{
+                        return
+                    }
+                    
+                    self?.updatePath(id: path.id!, properties: ["locations":locality])
+                    { (objId, error) in //done
+                        //have subscribers reload
+                    }
+                })
+            }
+                    
             do{
                 path.pointsJSON = String(data: try JSONEncoder().encode(points), encoding: .utf8)
             }

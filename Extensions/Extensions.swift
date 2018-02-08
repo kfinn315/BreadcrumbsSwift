@@ -10,6 +10,7 @@ import CoreGraphics
 import RxSwift
 import RxCocoa
 import RxDataSources
+import CoreLocation
 
 extension UIImage {
     class func circle(diameter: CGFloat, color: UIColor) -> UIImage {
@@ -138,4 +139,8 @@ extension UINavigationController {
     }
 }
 
-
+extension CLLocation {
+    convenience init(_ loc: CLLocationCoordinate2D) {
+        self.init(latitude: loc.latitude, longitude: loc.longitude)
+    }
+}

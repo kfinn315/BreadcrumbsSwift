@@ -30,7 +30,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         mapView.delegate = self
 
-        CrumbsManager.shared.currentPath.asObservable().subscribe(onNext: { [weak self] path in
+        CrumbsManager.shared.currentPathDriver?.drive(onNext: { [weak self] path in
             self?.path = path
             if path != nil {
                 DispatchQueue.main.async {
@@ -116,13 +116,15 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     private func getZoomRect(from coords: [CLLocationCoordinate2D]) -> MKMapRect {
         var zoomRect = MKMapRectNull;
+        
         for coord in coords
         {
             let point = MKMapPointForCoordinate(coord);
             let pointRect = MKMapRectMake(point.x, point.y, 0.1, 0.1);
             zoomRect = MKMapRectUnion(zoomRect, pointRect);
         }
-        return zoomRect
+        
+        return MKMapRectInset(zoomRect, -5.0, -5.0)
     }
     
     func AddAnnotation(Point: CLLocationCoordinate2D, Title: String){
@@ -207,7 +209,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         } else {
             // Fallback on earlier versions
         }
-        if let points = CrumbsManager.shared.currentPath.value?.getPoints() {
+        if let points = CrumbsManager.shared.CurrentPath?.getPoints() {
             let coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
             options.mapRect = getZoomRect(from: coordinates)
         }

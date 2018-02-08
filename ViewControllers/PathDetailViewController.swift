@@ -30,7 +30,7 @@ public class PathDetailViewController : UIViewController {
         
         title = ""
         
-        crumbsManager?.currentPath.asObservable().subscribe(onNext: {[weak self] path in
+        crumbsManager?.currentPathDriver?.drive(onNext: {[weak self] path in
             guard path != nil else{
                 print("error: currentPath is nil")
                 return
@@ -56,8 +56,8 @@ public class PathDetailViewController : UIViewController {
             
             
             DispatchQueue.main.async {
+                self?.lblTitle.text = path?.displayTitle
                 self?.lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
-                self?.lblTitle.text = path?.title
                 self?.tvNotes.text = "\(path?.notes ?? "")"
                 self?.lblSteps.text = path?.stepcount.formatted
                 self?.lblDistance.text = path?.distance.formatted
@@ -72,7 +72,7 @@ public class PathDetailViewController : UIViewController {
         
         //self.navigationController?.presentTransparentNavigationBar()
         
-        if let coverimg = crumbsManager?.currentPath.value?.coverimg {
+        if let coverimg = crumbsManager?.CurrentPath?.coverimg {
             self.ivTop.image = UIImage(data: coverimg)
         }
         

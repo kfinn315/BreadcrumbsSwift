@@ -61,7 +61,7 @@ class NavTableViewController: UITableViewController {
         let datasource = RxTableViewSectionedAnimatedDataSource<AnimatableSectionModel<String,Path>>(configureCell:
         { (_, tv:UITableView, indexPath:IndexPath, item:Path) in
             let cell = self.tableView.dequeueReusableCell(withIdentifier: "crumbcell", for: indexPath)
-            cell.textLabel?.text = (item.title?.isEmpty ?? false) ? "-" : item.title
+            cell.textLabel?.text = item.displayTitle
             cell.detailTextLabel?.text = item.startdate?.timestring
             return cell
         })
@@ -75,7 +75,7 @@ class NavTableViewController: UITableViewController {
             return try self.tableView.rx.model(at: ip)
             }.subscribe(onNext: { [unowned self] (path) in
                 do {
-                    CrumbsManager.shared.currentPath.value = path
+                    CrumbsManager.shared.setCurrentPath(path)
                     
                     if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
                     {

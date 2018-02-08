@@ -58,19 +58,22 @@ public class RecordingViewController : BaseRecordingController {
     func buttonSaveClicked(){
         recordingMgr.save() { [weak self] path, error in
             if error == nil, path != nil {
-                CrumbsManager.shared.currentPath.value = path
+                CrumbsManager.shared.setCurrentPath(path)
 
                 //get map snapshot
                 MapViewController().getSnapshot() { snapshot, error in
                     if error == nil, snapshot != nil {
                         CrumbsManager.shared.setCoverImg(snapshot!.image)
                     }
+                   
                     var firstVC = self?.navigationController?.viewControllers.first
                     if firstVC == nil {
-                        firstVC = self?.storyboard?.instantiateViewController(withIdentifier: "nav")
+                        firstVC = self?.storyboard?.instantiateViewController(withIdentifier: "table view")
                     }
+                    var editVC = EditPathViewController()
+                    editVC.isNewPath = true
                     
-                    let newVC_list : [UIViewController] = [firstVC!, EditPathViewController()]
+                    let newVC_list : [UIViewController] = [firstVC!, editVC]
                     
                     DispatchQueue.main.async{
                         self?.navigationController?.setViewControllers(newVC_list, animated: true)

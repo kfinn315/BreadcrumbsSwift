@@ -126,9 +126,8 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     }
     public func createAnAlbum(){
         let crumbsManager = CrumbsManager.shared
-        let path = crumbsManager.currentPath
-        if let start = path.value?.startdate, let end = path.value?.enddate {
-            PhotoManager.createTimespanAlbum(name: "\(path.value?.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: {
+        if let path = crumbsManager.CurrentPath, let start = path.startdate, let end = path.enddate {
+            PhotoManager.createTimespanAlbum(name: "\(path.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: {
                 (collection, error) in
                 if collection != nil {
                     _ = crumbsManager.UpdateCurrentAlbum(collection: collection!)

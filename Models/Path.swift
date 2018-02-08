@@ -52,6 +52,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
         coverimg = entity.value(forKey: "coverimg") as? Data
+        locations = entity.value(forKey: "locations") as? String
     }
     
     public typealias T = NSManagedObject
@@ -79,5 +80,13 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
     public var identity: Identity {
         return id ?? ""
     }
+    
+    public var displayTitle : String {
+        let title = self.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title?.isEmpty ?? false ? (locations ?? "-") : title!
+    }
+    
+    //public var displayDate : String {
+    
 }
 
