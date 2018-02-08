@@ -26,6 +26,8 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     }
     
     override func viewDidLoad() {
+        self.title = ""
+        
         self.dataSource = self
         self.delegate = self
         self.orderedViewControllers[0].view.tag = 0

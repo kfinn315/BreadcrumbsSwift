@@ -14,50 +14,20 @@ import CloudKit
 import RxCocoa
 import RxSwift
 
-public class RecordViewController : UIViewController,CLLocationManagerDelegate, CrumbsDelegate {
-    var recordingMgr = RecordingManager.shared
-    
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-    
-    public override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-    }
-    
-    //delegate callbacks
-    func errorUpdatingLocations(_ Error: Error) {
-        print("Could not update locations. \(Error), \(Error.localizedDescription)")
-        
-        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        
-        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
-        self.present(alert, animated: true, completion: nil)
-    }
-    
-    func errorSavingData(_ Error: Error) {
-        print("Could not save data. \(Error), \(Error.localizedDescription)")
-        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        
-        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
-        self.present(alert, animated: true, completion: nil)
-    }
-    
-    func CrumbSaved(error: Error?) {
-        DispatchQueue.main.async {
-            self.navigationController?.popViewController(animated: true)
-        }
-    }
-}
-
-public class NewPathViewController : RecordViewController {
-    
+public class NewPathViewController : BaseRecordingController {
+    @IBOutlet weak var lblInstructions: UILabel!
     @IBOutlet weak var btnStart: UIButton!
-    
     @IBOutlet weak var segAction: UISegmentedControl!
-
+    
+    var disposeBag = DisposeBag()
+    
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        onAuthStatusChanged(CLLocationManager.authorizationStatus())
+
+        CLLocationManager().rx.didChangeAuthorizationStatus.subscribe(onNext: { authstatus in self.onAuthStatusChanged(authstatus)
+        }).disposed(by: disposeBag)
         
         if recordingMgr.isRecording {
             //show recording vc
@@ -68,7 +38,16 @@ public class NewPathViewController : RecordViewController {
             btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )         
         }
     }
-    
+    func onAuthStatusChanged(_ authstatus: CLAuthorizationStatus){
+        if authstatus != CLAuthorizationStatus.authorizedAlways, authstatus != CLAuthorizationStatus.authorizedWhenInUse {
+            //not authorized, show message. prevent recording
+            self.lblInstructions.text = "please enable location in settings"
+            self.btnStart.isEnabled = false
+        } else {
+            self.lblInstructions.text = "Your path accuracy will be set based on the activity type you select."
+            self.btnStart.isEnabled = true
+        }
+    }
     @objc
     func startUpdating(){
         recordingMgr.startUpdating(with: LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking)

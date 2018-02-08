@@ -51,6 +51,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         stepcount = (entity.value(forKey: "stepcount") as! Int64)
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
+        coverimg = entity.value(forKey: "coverimg") as? Data
     }
     
     public typealias T = NSManagedObject

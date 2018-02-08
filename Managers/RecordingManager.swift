@@ -10,6 +10,7 @@ import Foundation
 import RxCocoa
 import RxSwift
 import CoreLocation
+import CoreData
 
 public class RecordingManager {
     private weak var crumbsManager = CrumbsManager.shared
@@ -51,8 +52,8 @@ public class RecordingManager {
         LocationManager.stopLocationUpdates();
     }
     
-    public func save(){
-        crumbsManager?.SaveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: "", notes: "");
+    public func save(callback: @escaping (Path?,Error?)->Void){
+        crumbsManager?.SaveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: "", notes: "", callback: callback)
     }
     
     public func reset(){

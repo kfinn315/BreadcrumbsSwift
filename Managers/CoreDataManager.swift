@@ -100,14 +100,13 @@ class PointsManager : CoreDataManager {
 }
 class PathsManager : CoreDataManager {
     //save all points to a path
-    func savePath(start: Date, end: Date, title: String, notes: String?, steps: Int64?, distance: Double?, callback: @escaping (Error?)->()) {
+    func savePath(start: Date, end: Date, title: String, notes: String?, steps: Int64?, distance: Double?, callback: @escaping (Path?,Error?)->()) {
         
         guard context != nil else {
             return
         }
         
-        context!.perform {
-            [weak localcontext = self.context] in
+        context!.perform { [weak localcontext = self.context] in
             guard localcontext != nil else { return }
             
             var points : [Point] = []
@@ -134,7 +133,7 @@ class PathsManager : CoreDataManager {
             path.startdate = start
             path.enddate = end
             path.title = title
-            path.notes = notes ?? ""
+            path.notes = notes
             path.distance = distance ?? 0
             path.stepcount = steps ?? 0
             path.id = path.startdate?.string
@@ -143,11 +142,11 @@ class PathsManager : CoreDataManager {
                 if self.context!.hasChanges{
                     try localcontext!.save()
                     localcontext!.refreshAllObjects()
-                    callback(nil)
+                    callback(path, nil)
                 }
             } catch{
                 print("error \(error)")
-                callback(error)
+                callback(nil, error)
             }
         }
     }
@@ -179,19 +178,14 @@ class PathsManager : CoreDataManager {
             return []
         }
         
-        do{
-            let fetchRequest : NSFetchRequest<Path> = Path.fetchRequest()
-            paths = try context!.fetch(fetchRequest)
-        } catch{
-            print("error \(error)")
-        }
+        let fetchRequest : NSFetchRequest<Path> = Path.fetchRequest()
+        paths = try context!.fetch(fetchRequest)
         
         return paths
     }
-    
-    func updatePath(id: String, properties: [AnyHashable : Any], callback: @escaping (Int)->()) {
+    func updatePath(id: String, properties: [AnyHashable : Any], callback: @escaping ([NSManagedObjectID],Error?)->()) {
         guard context != nil else{
-            callback(-1)
+            callback([],nil)
             return
         }
         
@@ -216,16 +210,16 @@ class PathsManager : CoreDataManager {
                         }
                     }
                     
-                    callback(updatedIds.count)
+                    callback(updatedIds,nil)
                 }
             } catch{
                 print("error \(error)")
-                callback(-1)
+                callback([],error)
             }
         }
     }
     
-    func updatePath(_ path: Path, callback: @escaping (Int)->()) {
+    func updatePath(_ path: Path, callback: @escaping ([NSManagedObjectID],Error?)->()) {
         var props : [AnyHashable : Any] = ["title":path.title ?? "", "notes":path.notes ?? "", "locations":path.locations ?? ""]
         
         if let startdate = path.startdate {

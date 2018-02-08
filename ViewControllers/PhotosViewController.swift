@@ -10,7 +10,14 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     var disposeBag = DisposeBag()
     
     private var assetThumbnailSize: CGSize?
-    var AlbumAlert : UIAlertController?
+    lazy var AlbumAlert : UIAlertController = {
+        let alert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
+        let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.showPhotoLibrary()})
+        alert.addAction(actionExisting)
+        alert.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
+        
+        return alert
+    }()
     var crumbsManager = CrumbsManager.shared
     private var assets : [PHAsset]?
     
@@ -19,22 +26,13 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         
         self.collectionView?.delegate = self
         self.collectionView?.dataSource = self
-        
-        self.AlbumAlert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
-        let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.showPhotoLibrary()})
-        self.AlbumAlert?.addAction(actionExisting)
-        self.AlbumAlert?.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
-        crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
-            self?.title = self?.crumbsManager.currentAlbumTitle
-            self?.assets = assetcollection
-            self?.refreshData()
+         crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
+            DispatchQueue.main.async{
+                self?.title = self?.crumbsManager.currentAlbumTitle
+                self?.assets = assetcollection
+                self?.refreshData()
+            }
         }).disposed(by: disposeBag)
-        
-        //self.collectionView?.contentInset = UIEdgeInsets(top: 5.0, left: 5.0, bottom: 75.0, right: 5.0)
-        
-//        let flowLayout = UICollectionViewFlowLayout()
-//        flowLayout.sectionInset = UIEdgeInsetsMake(5.0, 5.0, 5.0, 5.0)
-//        self.collectionView?.collectionViewLayout = flowLayout
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -43,24 +41,14 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
             let cellSize = layout.itemSize
             self.assetThumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
         }
-        
     }
     
     func refreshData(){
-        self.collectionView?.reloadData()
+        DispatchQueue.main.async { [weak self] in
+            self?.collectionView?.reloadData()
+        }
     }
-    
-    //    func removeAlbum(){
-    //        if var vcs = self.navigationController?.viewControllers {
-    //            _ = vcs.popLast()
-    //            if vcs.last as? PathDetailViewController != nil {
-    //                CrumbsManager.shared.currentPath?.albumData = nil
-    //            }
-    //
-    //            self.navigationController?.setViewControllers(vcs, animated: true)
-    //        }
-    //    }
-    
+   
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -68,8 +56,6 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     
     // MARK: UICollectionViewDataSource
-    
-    
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         // #warning Incomplete implementation, return the number of sections
         return 1
@@ -125,7 +111,7 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath){
         if self.assets == nil || indexPath.row == self.assets?.count { //last cell
-            present(AlbumAlert!, animated: true, completion: nil)
+            present(AlbumAlert, animated: true, completion: nil)
         } else{
             showFull(assets?[indexPath.row])
         }
@@ -165,4 +151,16 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
+    
+    //    func removeAlbum(){
+    //        if var vcs = self.navigationController?.viewControllers {
+    //            _ = vcs.popLast()
+    //            if vcs.last as? PathDetailViewController != nil {
+    //                CrumbsManager.shared.currentPath?.albumData = nil
+    //            }
+    //
+    //            self.navigationController?.setViewControllers(vcs, animated: true)
+    //        }
+    //    }
+    
 }

@@ -88,8 +88,6 @@ extension UIColor {
     }
     
 }
-
-
 extension UIView {
     @IBInspectable var cornerRadius: CGFloat {
         get {
@@ -102,6 +100,42 @@ extension UIView {
     }
 }
 
+extension UINavigationController {
+    public func presentTransparentNavigationBar() {
+//        UINavigationBar.appearance().barTintColor = primarycolor
+//        UINavigationBar.appearance().tintColor = secondarycolor
+//        UINavigationBar.appearance().backgroundColor = primarycolor
+//        UINavigationBar.appearance().titleTextAttributes = [NSAttributedStringKey.foregroundColor: secondarycolor]
+//
+        navigationBar.barTintColor = UIColor.clear
+        //navigationBar.tintColor = UIColor.clear
+        navigationBar.backgroundColor = UIColor.clear
+        
+        navigationBar.setBackgroundImage(UIImage(), for:UIBarMetrics.default)
+        navigationBar.isTranslucent = true
+        navigationBar.shadowImage = UIImage()
+        setNavigationBarHidden(false, animated:true)
+        
+    }
+    
+    public func hideTransparentNavigationBar() {
+        setNavigationBarHidden(false, animated:false)
+        
+        navigationBar.setBackgroundImage(UINavigationBar.appearance().backgroundImage(for: UIBarMetrics.default), for: UIBarMetrics.default)
+        navigationBar.isTranslucent = UINavigationBar.appearance().isTranslucent
+        navigationBar.shadowImage = UINavigationBar.appearance().shadowImage
+       
+        navigationBar.barTintColor = UINavigationBar.appearance().barTintColor
+        //navigationBar.tintColor = UINavigationBar.appearance().tintColor
+        navigationBar.backgroundColor = UINavigationBar.appearance().backgroundColor
+        
+        let statusBar: UIView = UIApplication.shared.value(forKey: "statusBar") as! UIView
+        if statusBar.responds(to:#selector(setter: UIView.backgroundColor)) {
+            statusBar.backgroundColor = UIColor(rgb: 0xFFFC79) //yellow
 
+        }
+        UIApplication.shared.statusBarStyle = .lightContent
+    }
+}
 
 

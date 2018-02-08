@@ -50,8 +50,17 @@
                 
                 }.disposed(by: disposeBag)
             
-            currentPathDriver = Driver.just(currentPath.value)
+            //currentPathDriver = currentPath.asDriver().asDriver(onErrorJustReturn: nil)
             
+        }
+        
+        func setCoverImg(_ img: UIImage){
+            if currentPath.value != nil, let imgdata = UIImagePNGRepresentation(img) {
+                pathsManager.updatePath(id: currentPath.value!.id!, properties: ["coverimg" : imgdata], callback: { (id, error) in
+                    //updated
+                })
+                //update subscribers here
+            }
         }
         
         func UpdateCurrentAlbum(collection: PhotoCollection) {
@@ -86,11 +95,10 @@
                 return
             }
             
-            pathsManager.updatePath(currentPath.value!, callback: { [weak self] count in
+            pathsManager.updatePath(currentPath.value!, callback: { [weak self] ids, error in
                 if self?.currentPath.value == nil {
                     return
                 }
-                
                 if let id = self?.currentPath.value?.id {
                     self?.currentPath.value = self?.pathsManager.getPath(id)
                 }
@@ -100,7 +108,7 @@
             })
         }
         
-        func SaveNewPath(start: Date, end: Date, title: String, notes: String?) {
+        func SaveNewPath(start: Date, end: Date, title: String, notes: String?, callback: @escaping (Path?,Error?)->Void) {
             var stepcount : Int64 = 0
             var distance : Double = 0.0
             
@@ -115,12 +123,7 @@
                 }
             })
             
-            pathsManager.savePath(start: start, end: end, title: title, notes: notes, steps: stepcount, distance: distance, callback: {
-                [weak self] error in
-                DispatchQueue.main.async{
-                    self?.delegate?.CrumbSaved?(error: error)
-                }
-            })
+            pathsManager.savePath(start: start, end: end, title: title, notes: notes, steps: stepcount, distance: distance, callback: callback)
         }
         
         private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {

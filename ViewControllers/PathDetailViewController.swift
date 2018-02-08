@@ -14,7 +14,6 @@ import Photos
 
 public class PathDetailViewController : UIViewController {
     private weak var crumbsManager = CrumbsManager.shared
-    //private var mapManager : MapViewManager?
     var disposeBag = DisposeBag()
     weak var btnEditTop: UIBarButtonItem!
     
@@ -25,32 +24,36 @@ public class PathDetailViewController : UIViewController {
     @IBOutlet weak var lblDuration: UILabel!
     @IBOutlet weak var lblDistance: UILabel!
     @IBOutlet weak var lblSteps: UILabel!
-    
-    public override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
-        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
-    }
-    
-    required public init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-    }
-    
+
     public override func viewDidLoad() {
         super.viewDidLoad()
         
+        title = ""
+        
         crumbsManager?.currentPath.asObservable().subscribe(onNext: {[weak self] path in
-            if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
-                if let size = self?.ivTop.frame.size {
-                PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, dict) in
-                self?.ivTop.setRounded()
-                self?.ivTop.image = img
-                })
-                }
-            }
-            
             guard path != nil else{
                 print("error: currentPath is nil")
                 return
             }
+
+            if let coverimg = path!.coverimg {
+                self?.ivTop.image = UIImage(data: coverimg)
+                self?.ivTop.setRounded()
+            } else {
+                if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
+                    if let size = self?.ivTop.frame.size {
+                        PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, dict) in
+                            
+                            DispatchQueue.main.async{
+                                self?.ivTop.image = img
+                                self?.ivTop.setRounded()
+                                self?.ivTop.setNeedsLayout()
+                            }
+                        })
+                    }
+                }
+            }
+            
             
             DispatchQueue.main.async {
                 self?.lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
@@ -61,13 +64,17 @@ public class PathDetailViewController : UIViewController {
                 self?.lblDuration.text = path?.duration.formatted
             }
         }).disposed(by: disposeBag)
-     
+        
     }
     
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        ivTop.setRounded()
+        //self.navigationController?.presentTransparentNavigationBar()
+        
+        if let coverimg = crumbsManager?.currentPath.value?.coverimg {
+            self.ivTop.image = UIImage(data: coverimg)
+        }
         
         if #available(iOS 11.0, *) {
             self.navigationItem.largeTitleDisplayMode = .never
@@ -76,4 +83,3 @@ public class PathDetailViewController : UIViewController {
         }
     }
 }
-

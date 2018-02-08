@@ -38,6 +38,8 @@ class NavTableViewController: UITableViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+       // self.navigationController?.hideTransparentNavigationBar()
+        
         if #available(iOS 11.0, *) {
             self.navigationController?.navigationBar.prefersLargeTitles = true
         } else {
