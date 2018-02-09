@@ -4,15 +4,16 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-class PhotosViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate
-{
+class PhotosViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate {
     @IBOutlet weak var collectionView: UICollectionView!
     var disposeBag = DisposeBag()
     
     private var assetThumbnailSize: CGSize?
-    lazy var AlbumAlert : UIAlertController = {
+    lazy var albumAlert : UIAlertController = {
         let alert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
-        let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: {[weak self] alert in self?.showPhotoLibrary()})
+        let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: { [weak self] _ in
+            self?.showPhotoLibrary()
+        })
         alert.addAction(actionExisting)
         alert.addAction(UIAlertAction.init(title: "Cancel", style: .cancel, handler: nil))
         
@@ -26,8 +27,8 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         
         self.collectionView?.delegate = self
         self.collectionView?.dataSource = self
-         crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
-            DispatchQueue.main.async{
+        crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
+            DispatchQueue.main.async {
                 self?.title = self?.crumbsManager.currentAlbumTitle
                 self?.assets = assetcollection
                 self?.refreshData()
@@ -37,23 +38,22 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     override func viewWillAppear(_ animated: Bool) {
         // Get size of the collectionView cell for thumbnail image
-        if let layout = collectionView?.collectionViewLayout as? UICollectionViewFlowLayout{
+        if let layout = collectionView?.collectionViewLayout as? UICollectionViewFlowLayout {
             let cellSize = layout.itemSize
             self.assetThumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
         }
     }
     
-    func refreshData(){
+    func refreshData() {
         DispatchQueue.main.async { [weak self] in
             self?.collectionView?.reloadData()
         }
     }
-   
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    
     
     // MARK: UICollectionViewDataSource
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -65,34 +65,35 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         // #warning Incomplete implementation, return the number of items
         var count: Int = 1
         
-        if(self.assets != nil){
+        if(self.assets != nil) {
             count = self.assets!.count + 1
         }
         
-        return count;
+        return count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
+        var cell : UICollectionViewCell?
+        
         if self.assets == nil || indexPath.row == self.assets?.count { //last cell
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "addPhoto", for: indexPath as IndexPath) as! AddPhotoCell
+            cell = collectionView.dequeueReusableCell(withReuseIdentifier: "addPhoto", for: indexPath as IndexPath) as? AddPhotoCell
             
-            return cell
+        } else {
+            
+            collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath)
+            
+            //Modify the cell
+            if assets?.count ?? 0 > indexPath.item, let asset = self.assets?[indexPath.item], let assetsize = assetThumbnailSize {
+                PHImageManager.default().requestImage(for: asset, targetSize: assetsize, contentMode: .aspectFill, options: nil, resultHandler: {(result, _) in
+                    if result != nil, let ivcell = cell as? ImageCollectionViewCell {
+                        ivcell.imageView.image = result
+                    }
+                })
+            }
         }
         
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath) as! ImageCollectionViewCell
-        
-        //Modify the cell
-        if assets?.count ?? 0 > indexPath.item, let asset = self.assets?[indexPath.item], let assetsize = assetThumbnailSize
-        {
-            PHImageManager.default().requestImage(for: asset, targetSize: assetsize, contentMode: .aspectFill, options: nil, resultHandler: {(result, info)in
-                if result != nil {
-                    cell.imageView.image = result
-                }
-            })
-        }
-        
-        return cell
+        return cell ?? UICollectionViewCell()
     }
     
     // MARK: - UICollectionViewDelegateFlowLayout methods
@@ -105,32 +106,33 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     }
     
     // UIImagePickerControllerDelegate Methods
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController){
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true, completion: nil)
     }
     
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath){
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if self.assets == nil || indexPath.row == self.assets?.count { //last cell
-            present(AlbumAlert, animated: true, completion: nil)
-        } else{
+            present(albumAlert, animated: true, completion: nil)
+        } else {
             showFull(assets?[indexPath.row])
         }
     }    
-    func showFull(_ asset: PHAsset?){
-        guard asset != nil else{ return }
-        
-        let imageview = storyboard?.instantiateViewController(withIdentifier: "ImageView") as! ImageViewController
-        imageview.asset = asset
-        //photovc.assetCollection = assetCollection        
-        self.parent?.navigationController?.pushViewController(imageview, animated: true)
+    func showFull(_ asset: PHAsset?) {
+        guard asset != nil else {
+            return
+        }
+        if let imageVC = storyboard?.instantiateViewController(withIdentifier: "ImageView") as? ImageViewController {
+            imageVC.asset = asset
+            //photovc.assetCollection = assetCollection
+            self.parent?.navigationController?.pushViewController(imageVC, animated: true)
+        }
     }
-    public func createAnAlbum(){
+    public func createAnAlbum() {
         let crumbsManager = CrumbsManager.shared
-        if let path = crumbsManager.CurrentPath, let start = path.startdate, let end = path.enddate {
-            PhotoManager.createTimespanAlbum(name: "\(path.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: {
-                (collection, error) in
+        if let path = crumbsManager.currentPath, let start = path.startdate, let end = path.enddate {
+            PhotoManager.createTimespanAlbum(name: "\(path.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: { (collection, error) in
                 if collection != nil {
-                    _ = crumbsManager.UpdateCurrentAlbum(collection: collection!)
+                    _ = crumbsManager.updateCurrentAlbum(collection: collection!)
                     
                     DispatchQueue.main.async {
                         //self?.updateCells()
@@ -143,10 +145,8 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         }
     }
     
-    public func showPhotoLibrary()
-    {
-        if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Albums")
-        {
+    public func showPhotoLibrary() {
+        if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Albums") {
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }

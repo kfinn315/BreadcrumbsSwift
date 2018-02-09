@@ -89,7 +89,7 @@ public class AlbumsTableViewController : UITableViewController {
     
     public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let album = self.data[indexPath.row]
-        _ = CrumbsManager.shared.UpdateCurrentAlbum(collection: album)
+        _ = CrumbsManager.shared.updateCurrentAlbum(collection: album)
         
         self.navigationController?.popViewController(animated: true)
     }

@@ -9,10 +9,10 @@
 import Foundation
 import CoreLocation
 
-public struct LocationSettings{ 
+public struct LocationSettings {
     static var locationAccuracy = kCLLocationAccuracyNearestTenMeters
-    static var significantUpdatesOn = false;
-    static var backgroundLocationUpdatesOn = true;
-    static var minimumDistance = CLLocationDistance(Double(4));
+    static var significantUpdatesOn = false
+    static var backgroundLocationUpdatesOn = true
+    static var minimumDistance = CLLocationDistance(Double(4))
 
 }

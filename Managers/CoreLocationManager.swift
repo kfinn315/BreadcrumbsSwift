@@ -10,7 +10,7 @@ import CoreLocation
 import RxSwift
 import RxCocoa
 
-public enum LocationAccuracy : Int{
+public enum LocationAccuracy : Int {
     case walking
     case running
     case biking
@@ -18,12 +18,12 @@ public enum LocationAccuracy : Int{
     case custom
 }
 
-class CoreLocationManager: NSObject, CLLocationManagerDelegate{
-    static let sharedInstance = CoreLocationManager();
-    weak var delegate : CoreLocationDelegate?;
+class CoreLocationManager: NSObject, CLLocationManagerDelegate {
+    static let sharedInstance = CoreLocationManager()
+    weak var delegate : CoreLocationDelegate?
     public var authorized : Driver<Bool>
     public var location : Driver<CLLocation>
-    private var updating = false;
+    private var updating = false
     var disposeBag = DisposeBag()
     
     public let locationManager = CLLocationManager()
@@ -33,7 +33,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         
         weak var weakLocationManager = locationManager
         
-        authorized = Observable.deferred{
+        authorized = Observable.deferred {
             let status = CLLocationManager.authorizationStatus()
             guard let strongLocationManager = weakLocationManager else {
                 return Observable.just(status)
@@ -57,47 +57,42 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         
         locationManager.requestAlwaysAuthorization()
         
-        if(LocationSettings.significantUpdatesOn && !CLLocationManager.significantLocationChangeMonitoringAvailable()){
-            LocationSettings.significantUpdatesOn  = false;
+        if(LocationSettings.significantUpdatesOn && !CLLocationManager.significantLocationChangeMonitoringAvailable()) {
+            LocationSettings.significantUpdatesOn  = false
         }
         
         //locationManager.delegate = self;
 //        updateSettings()
     }
 
-    private func updateSettings(_ accuracy: LocationAccuracy){
+    private func updateSettings(_ accuracy: LocationAccuracy) {
         switch accuracy {
-            case .walking:
-                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-                locationManager.distanceFilter = 50.0 //meters
-                break;
-            case .running:
-                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-                locationManager.distanceFilter = 50.0 //meters
-                break
-            case .biking:
-                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-                locationManager.distanceFilter = 100.0;
-                break
-            case .driving:
-                locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-                locationManager.distanceFilter = 1000.0 //meters
-                break
-            case .custom:
-                locationManager.desiredAccuracy = LocationSettings.locationAccuracy;
-                locationManager.distanceFilter = LocationSettings.minimumDistance;
-                break
+        case .walking:
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 50.0 //meters
+        case .running:
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 50.0 //meters
+        case .biking:
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 100.0
+        case .driving:
+            locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+            locationManager.distanceFilter = 1000.0 //meters
+        case .custom:
+            locationManager.desiredAccuracy = LocationSettings.locationAccuracy
+            locationManager.distanceFilter = LocationSettings.minimumDistance
         }
         
-        locationManager.allowsBackgroundLocationUpdates = LocationSettings.backgroundLocationUpdatesOn;
-        if(LocationSettings.significantUpdatesOn){
+        locationManager.allowsBackgroundLocationUpdates = LocationSettings.backgroundLocationUpdatesOn
+        if(LocationSettings.significantUpdatesOn) {
             locationManager.startMonitoringSignificantLocationChanges()
-        } else{
-            locationManager.stopMonitoringSignificantLocationChanges();
+        } else {
+            locationManager.stopMonitoringSignificantLocationChanges()
         }
     }
 
-    func startLocationUpdates(with accuracy: LocationAccuracy = .walking){
+    func startLocationUpdates(with accuracy: LocationAccuracy = .walking) {
         updateSettings(accuracy)
         
         updating = true
@@ -109,13 +104,13 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate{
         return updating
     }    
     
-    func stopLocationUpdates(){
-        locationManager.allowsBackgroundLocationUpdates = false;
-        locationManager.stopMonitoringSignificantLocationChanges();
+    func stopLocationUpdates() {
+        locationManager.allowsBackgroundLocationUpdates = false
+        locationManager.stopMonitoringSignificantLocationChanges()
         locationManager.stopUpdatingLocation()
 
         print("Stop location updates")
-        updating = false;
-        delegate?.didStopLocationUpdates?();
+        updating = false
+        delegate?.didStopLocationUpdates?()
     }
 }

@@ -10,13 +10,12 @@ import Foundation
 import CloudKit
 import CoreLocation
 
-@objc protocol CoreLocationDelegate: class
-{    
-    @objc optional func errorUpdatingLocations(_ Error: Error);
+@objc protocol CoreLocationDelegate: class {    
+    @objc optional func errorUpdatingLocations(_ error: Error)
     
-    @objc optional func didUpdateLocations(manager: CLLocationManager, location: CLLocation);
+    @objc optional func didUpdateLocations(manager: CLLocationManager, location: CLLocation)
     
-    @objc optional func didStartLocationUpdates();
+    @objc optional func didStartLocationUpdates()
     
-    @objc optional func didStopLocationUpdates();
+    @objc optional func didStopLocationUpdates()
 }

@@ -57,9 +57,8 @@ class NavTableViewController: UITableViewController {
             // Fallback on earlier versions
         }
     }
-    func configureTableView(){
-        let datasource = RxTableViewSectionedAnimatedDataSource<AnimatableSectionModel<String,Path>>(configureCell:
-        { (_, tv:UITableView, indexPath:IndexPath, item:Path) in
+    func configureTableView() {
+        let datasource = RxTableViewSectionedAnimatedDataSource<AnimatableSectionModel<String,Path>>(configureCell: { (_, _, indexPath:IndexPath, item:Path) in
             let cell = self.tableView.dequeueReusableCell(withIdentifier: "crumbcell", for: indexPath)
             cell.textLabel?.text = item.displayTitle
             cell.detailTextLabel?.text = item.startdate?.timestring
@@ -71,23 +70,22 @@ class NavTableViewController: UITableViewController {
         datasource.titleForHeaderInSection = { ds, index in return ds.sectionModels[index].identity }
         NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)]).map(mapPathsToSections).bind(to: tableView.rx.items(dataSource: datasource)).disposed(by: disposeBag)
         
-        tableView.rx.itemSelected.map { [unowned self] ip -> Path in
-            return try self.tableView.rx.model(at: ip)
+        tableView.rx.itemSelected.map { [unowned self] indexPath -> Path in
+            return try self.tableView.rx.model(at: indexPath)
             }.subscribe(onNext: { [unowned self] (path) in
                 do {
                     CrumbsManager.shared.setCurrentPath(path)
                     
-                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager")
-                    {
+                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager") {
                         self.showDetailViewController(vc, sender: self)
                     }
                 }
             }).disposed(by: disposeBag)
         
-        self.tableView.rx.itemDeleted.map { [unowned self] ip -> Path in
-            return try self.tableView.rx.model(at: ip)
+        self.tableView.rx.itemDeleted.map { [unowned self] indexPath -> Path in
+            return try self.tableView.rx.model(at: indexPath)
             }.subscribe(onNext: { (path) in
-                //TODO: add delete confirmation alert
+                //add delete confirmation alert
                 do {
                     try NavTableViewController.managedObjectContext.rx.delete(path)
                 } catch {
@@ -99,7 +97,7 @@ class NavTableViewController: UITableViewController {
 //    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
 //        
 //    }
-    private func mapPathsToSections(_ paths: [Path]) -> [AnimatableSectionModel<String, Path>]{ //group paths into sections by date and sort by date descending
+    private func mapPathsToSections(_ paths: [Path]) -> [AnimatableSectionModel<String, Path>] { //group paths into sections by date and sort by date descending
         var dates : [Date : [Path]] = [:]
         for path in paths {
             if let startdate = path.startdate {
@@ -110,8 +108,8 @@ class NavTableViewController: UITableViewController {
                 dates[day]?.append(path)
             }
         }
-        let sorteddates = dates.sorted(by: { (o1, o2) -> Bool in
-            return o1.key > o2.key
+        let sorteddates = dates.sorted(by: { (date0, date1) -> Bool in
+            return date0.key > date1.key
         })
         let result = sorteddates.reduce(into: [AnimatableSectionModel<String, Path>](), { (result, record) in
             result.append(AnimatableSectionModel(model: record.key.datestring, items: record.value))

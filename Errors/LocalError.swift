@@ -8,7 +8,6 @@
 
 import Foundation
 
-
 enum LocalError: Error {
     case failed(message: String)
 }
@@ -17,7 +16,7 @@ extension LocalError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .failed(message: let message):
-            return NSLocalizedString(message, comment: "");
+            return NSLocalizedString(message, comment: "")
         }
     }
 }

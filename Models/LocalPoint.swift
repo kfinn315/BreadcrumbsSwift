@@ -20,7 +20,7 @@ class LocalPoint {
         timestamp = time
     }
     
-    public static func from(_ loc: CLLocation) -> LocalPoint{
+    public static func from(_ loc: CLLocation) -> LocalPoint {
         return LocalPoint(lat: loc.coordinate.latitude, lng: loc.coordinate.longitude, time: loc.timestamp as NSDate)
     }
     

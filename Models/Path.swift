@@ -13,14 +13,14 @@ import RxCoreData
 
 @objc(Path)
 public class Path: NSManagedObject, Persistable, IdentifiableType {
-    var entitydescription : NSEntityDescription{
+    var entitydescription : NSEntityDescription {
         return NSEntityDescription.entity(forEntityName: "Path", in: NavTableViewController.managedObjectContext)!
     }
     public static var entityName: String = "Path"
     
     let decoder = JSONDecoder()
     public func getPoints() -> [Point] {
-        do{
+        do {
             if let json = (pointsJSON ?? "").data(using: .utf8) {
                 return try decoder.decode([Point].self, from: json)
             }
@@ -34,7 +34,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         super.init(entity: entity, insertInto: context)
     }
     
-    public required init(){
+    public required init() {
         super.init(entity: entitydescription, insertInto: nil)
     }
 
@@ -46,9 +46,9 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         notes = entity.value(forKey: "notes") as? String
         startdate = entity.value(forKey: "startdate") as? Date
         enddate = entity.value(forKey: "enddate") as? Date
-        duration = entity.value(forKey: "duration") as! Float
-        distance = entity.value(forKey: "distance") as! Double
-        stepcount = (entity.value(forKey: "stepcount") as! Int64)
+        duration = (entity.value(forKey: "duration") as? Float)!
+        distance = (entity.value(forKey: "distance") as? Double)!
+        stepcount = (entity.value(forKey: "stepcount") as? Int64)!
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
         coverimg = entity.value(forKey: "coverimg") as? Data

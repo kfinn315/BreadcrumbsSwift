@@ -40,9 +40,8 @@ extension UIImageView {
     }
 }
 
-
 extension UIViewController {
-    func setClearNav(tintColor: UIColor = UIColor.HYP_LinkBlue){
+    func setClearNav(tintColor: UIColor = UIColor.blue) {
         //        let color = UIColor.HYP_LinkBlue
         self.navigationController?.navigationBar.isTranslucent = true
         self.navigationController?.navigationBar.barTintColor = UIColor.clear
@@ -57,21 +56,6 @@ extension UIViewController {
 }
 
 extension UIColor {
-    static let HYP_Green : UIColor = UIColor.init(rgb:0x00AB84)
-    static let HYP_GreenDark : UIColor = UIColor.init(rgb:0x009a77)
-    
-    static let HYP_DarkGray : UIColor = UIColor.init(rgb: 0x666666)
-    static let HYP_MidGray : UIColor = UIColor.init(rgb: 0x999999)
-    static let HYP_LightGray : UIColor = UIColor.init(rgb: 0xcccccc)
-    static let HYP_OffWhite: UIColor = UIColor.init(rgb: 0xe6e6e6)
-    static let HYP_White: UIColor = UIColor.init(rgb: 0xf2f2f2)
-    
-    static let HYP_BtnGray : UIColor = UIColor.init(rgb:0xc1c1c1)
-    static let HYP_BtnGrayDark : UIColor = UIColor.init(rgb:0xbbbbbb)
-    
-    static let HYP_Red : UIColor = UIColor.init(rgb:0xC62325)
-    static let HYP_LinkBlue : UIColor = UIColor.init(rgb: 0x0952E4)
-    
     convenience init(red: Int, green: Int, blue: Int) {
         assert(red >= 0 && red <= 255, "Invalid red component")
         assert(green >= 0 && green <= 255, "Invalid green component")
@@ -130,11 +114,10 @@ extension UINavigationController {
         //navigationBar.tintColor = UINavigationBar.appearance().tintColor
         navigationBar.backgroundColor = UINavigationBar.appearance().backgroundColor
         
-        let statusBar: UIView = UIApplication.shared.value(forKey: "statusBar") as! UIView
-        if statusBar.responds(to:#selector(setter: UIView.backgroundColor)) {
-            statusBar.backgroundColor = UIColor(rgb: 0xFFFC79) //yellow
-
-        }
+//        if let UIView = UIApplication.shared.value(forKey: "statusBar") as? UIView, statusBar.responds(to:#selector(setter: UIView.backgroundColor)) {
+//            statusBar.backgroundColor = UIColor(rgb: 0xFFFC79) //yellow
+//
+//        }
         UIApplication.shared.statusBarStyle = .lightContent
     }
 }

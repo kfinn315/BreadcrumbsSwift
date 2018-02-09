@@ -9,21 +9,19 @@
 import Foundation
 import CloudKit
 
-
 extension ICloudStatusError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .Unknown:
+        case .unknown:
             return NSLocalizedString("Unknown iCloud Account", comment: "")
-        case .NoAccount:
+        case .noAccount:
             return NSLocalizedString("No iCloud account is set up", comment: "")
         }
     }
    
 }
 
-public enum ICloudStatusError: Error{
-    case Unknown
-    case NoAccount
-    
+public enum ICloudStatusError: Error {
+    case unknown
+    case noAccount
 }

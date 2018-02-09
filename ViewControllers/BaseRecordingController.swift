@@ -26,24 +26,24 @@ public class BaseRecordingController : UIViewController,CLLocationManagerDelegat
     }
     
     //delegate callbacks
-    func errorUpdatingLocations(_ Error: Error) {
-        print("Could not update locations. \(Error), \(Error.localizedDescription)")
+    func errorUpdatingLocations(_ error: Error) {
+        print("Could not update locations. \(error), \(error.localizedDescription)")
         
-        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        
-        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
-        self.present(alert, animated: true, completion: nil)
-    }
-    
-    func errorSavingData(_ Error: Error) {
-        print("Could not save data. \(Error), \(Error.localizedDescription)")
-        let alert = UIAlertController(title: "Error", message: Error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
         
         alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
         self.present(alert, animated: true, completion: nil)
     }
     
-    func CrumbSaved(error: Error?) {
+    func errorSavingData(_ error: Error) {
+        print("Could not save data. \(error), \(error.localizedDescription)")
+        let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func crumbSaved(error: Error?) {
         DispatchQueue.main.async {
             self.navigationController?.popViewController(animated: true)
         }

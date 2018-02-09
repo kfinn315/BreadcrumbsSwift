@@ -27,9 +27,8 @@ class PhotoAlbum: NSObject {
         }
         
         if PHPhotoLibrary.authorizationStatus() != PHAuthorizationStatus.authorized {
-            PHPhotoLibrary.requestAuthorization({ (status: PHAuthorizationStatus) -> Void in
-                ()
-            })
+            PHPhotoLibrary.requestAuthorization { (status: PHAuthorizationStatus) -> Void in status
+            }
         }
         
         if PHPhotoLibrary.authorizationStatus() == PHAuthorizationStatus.authorized {
@@ -52,14 +51,14 @@ class PhotoAlbum: NSObject {
     func createAlbum() {
         PHPhotoLibrary.shared().performChanges({
             PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: self.albumName)   // create an asset collection with the album name
-        }) { success, error in
+        }, completionHandler: { success, error in
             if success {
                 self.assetCollection = self.fetchAssetCollectionForAlbum()
                 self.id = self.assetCollection.localIdentifier
             } else {
                 print("error \(error?.localizedDescription ?? "")")
             }
-        }
+        })
     }
     
     func fetchAssetCollectionForAlbum() -> PHAssetCollection? {
@@ -73,7 +72,7 @@ class PhotoAlbum: NSObject {
         return nil
     }
     
-    func addPhotosInTimespan(start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?)->(Void) ){
+    func addPhotosInTimespan(start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?) -> Void) {
         PHPhotoLibrary.shared().performChanges({
             guard self.assetCollection != nil else {
                 print("error asset collection is nil")
@@ -85,7 +84,7 @@ class PhotoAlbum: NSObject {
             opts.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@", start as NSDate, end as NSDate)
             let fetchresult = PHAsset.fetchAssets(with: .image, options: opts)
             albumChangeRequest?.addAssets(fetchresult)
-        }, completionHandler: { (success, error) in
+        }, completionHandler: { (_, error) in
             if error !=  nil {
                 print("error "+error!.localizedDescription)
             }

@@ -12,17 +12,17 @@ import CloudKit
 @objc
 protocol CloudKitDelegate: class {
     
-    @objc optional func CrumbSaved(_ Id: CKRecordID);
+    @objc optional func crumbSaved(_ recordid: CKRecordID)
     
     //func CrumbsLoaded(_ Crumbs: Array<PathsType>);
     
-    @objc optional func CrumbsReset() throws;
+    @objc optional func crumbsReset() throws
     
-    @objc optional func CrumbDeleted(_ RecordID: CKRecordID);
+    @objc optional func crumbDeleted(_ recordID: CKRecordID)
     
-    @objc optional func errorUpdatingCrumbs(_ Error: Error);
+    @objc optional func errorUpdatingCrumbs(_ error: Error)
     
-    @objc optional func errorSavingData(_ Error: Error);
+    @objc optional func errorSavingData(_ error: Error)
     
-    @objc optional func CrumbsUpdated()
+    @objc optional func crumbsUpdated()
 }

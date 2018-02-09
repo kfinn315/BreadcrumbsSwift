@@ -11,10 +11,10 @@ import UIKit
 import Photos
 
 public class RecordingViewController : BaseRecordingController {
-    lazy var SaveAlert : UIAlertController = {
+    lazy var saveAlert : UIAlertController = {
         let alert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
-        let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonSaveClicked()})
-        let actionReset = UIAlertAction.init(title: "Reset", style: UIAlertActionStyle.default, handler: {(UIAlertAction) -> Void in self.buttonResetClicked()})
+        let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(_) -> Void in self.buttonSaveClicked()})
+        let actionReset = UIAlertAction.init(title: "Reset", style: UIAlertActionStyle.default, handler: {(_) -> Void in self.buttonResetClicked()})
         alert.addAction(actionSave)
         alert.addAction(actionReset)
         
@@ -38,8 +38,8 @@ public class RecordingViewController : BaseRecordingController {
         
         self.lblTime.text = "\(self.timePast) seconds"
         
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: {(timer) in
-            self.timePast = self.timePast + 1
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: {(_) in
+            self.timePast += 1
             self.lblTime.text = "\(self.timePast) seconds"
         })
     }
@@ -49,19 +49,19 @@ public class RecordingViewController : BaseRecordingController {
     }
     
     @objc
-    func buttonStopClicked(){
+    func buttonStopClicked() {
         recordingMgr.stopUpdating()
         timer?.invalidate()
-        self.present(SaveAlert, animated: true, completion: nil)
+        self.present(saveAlert, animated: true, completion: nil)
     }
     
-    func buttonSaveClicked(){
-        recordingMgr.save() { [weak self] path, error in
+    func buttonSaveClicked() {
+        recordingMgr.save { [weak self] path, error in
             if error == nil, path != nil {
                 CrumbsManager.shared.setCurrentPath(path)
 
                 //get map snapshot
-                MapViewController().getSnapshot() { snapshot, error in
+                MapViewController().getSnapshot { snapshot, error in
                     if error == nil, snapshot != nil {
                         CrumbsManager.shared.setCoverImg(snapshot!.image)
                     }
@@ -70,17 +70,16 @@ public class RecordingViewController : BaseRecordingController {
                     if firstVC == nil {
                         firstVC = self?.storyboard?.instantiateViewController(withIdentifier: "table view")
                     }
-                    var editVC = EditPathViewController()
+                    let editVC = EditPathViewController()
                     editVC.isNewPath = true
                     
                     let newVC_list : [UIViewController] = [firstVC!, editVC]
                     
-                    DispatchQueue.main.async{
+                    DispatchQueue.main.async {
                         self?.navigationController?.setViewControllers(newVC_list, animated: true)
                     }
                 }
-            }
-            else {
+            } else {
                 print("error \(error)")
             }
         }
@@ -93,7 +92,7 @@ public class RecordingViewController : BaseRecordingController {
 //    @objc func onSnapshotSaved(image: UIImage, error: Error?, contextInfo: UnsafeMutableRawPointer?){
 //        image.imageAsset
 //    }
-    func buttonResetClicked(){
+    func buttonResetClicked() {
         //go to new path vc
         self.navigationController?.popViewController(animated: true)
     }

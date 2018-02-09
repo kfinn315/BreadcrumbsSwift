@@ -76,7 +76,7 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         return pageViewController.viewControllers?.first?.view?.tag ?? 0
     }
 
-    @objc func editPath(){
+    @objc func editPath() {
         self.navigationController?.pushViewController(EditPathViewController(), animated: true)
     }
 }

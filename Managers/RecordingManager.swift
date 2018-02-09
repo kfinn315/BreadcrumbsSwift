@@ -14,53 +14,52 @@ import CoreData
 
 public class RecordingManager {
     private weak var crumbsManager = CrumbsManager.shared
-    private var LocationManager = CoreLocationManager()
+    private var locationManager = CoreLocationManager()
     private var disposeBag = DisposeBag()
     private var startTime : Date?
     private var stopTime : Date?
     
     static private var _shared : RecordingManager?
     static var shared : RecordingManager {
-        get{
-            if _shared == nil {
-                _shared = RecordingManager()
-            }
-            
-            return _shared!
+        if _shared == nil {
+            _shared = RecordingManager()
         }
+        
+        return _shared!
+        
     }
     
     private init() {
-        LocationManager.location
+        locationManager.location
             .drive(onNext: { [unowned self] (cllocation : CLLocation) in
                 //this is called when there's a new location
-                print("location manager didUpdateLocations");
+                print("location manager didUpdateLocations")
                 
                 self.crumbsManager?.addPointToData(LocalPoint.from(cllocation))
             }).disposed(by: disposeBag)
     }
     
-    public func startUpdating(with accuracy: LocationAccuracy = .walking){
+    public func startUpdating(with accuracy: LocationAccuracy = .walking) {
         startTime = Date()
         stopTime = nil
         crumbsManager!.clearPoints()
-        LocationManager.startLocationUpdates(with: accuracy);
+        locationManager.startLocationUpdates(with: accuracy)
     }
     
-    public func stopUpdating(){
+    public func stopUpdating() {
         stopTime = Date()
-        LocationManager.stopLocationUpdates();
+        locationManager.stopLocationUpdates()
     }
     
-    public func save(callback: @escaping (Path?,Error?)->Void){
-        crumbsManager?.SaveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: "", notes: "", callback: callback)
+    public func save(callback: @escaping (Path?,Error?) -> Void) {
+        crumbsManager?.saveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: "", notes: "", callback: callback)
     }
     
-    public func reset(){
-        crumbsManager?.clearPoints();
+    public func reset() {
+        crumbsManager?.clearPoints()
     }
     
     public var isRecording : Bool {
-        return LocationManager.isUpdating
+        return locationManager.isUpdating
     }
 }

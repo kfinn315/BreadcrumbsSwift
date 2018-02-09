@@ -13,7 +13,7 @@ import UIKit
 
 @objc(Point)
 public class Point: NSManagedObject, Codable {
-    var entitydescription : NSEntityDescription{
+    var entitydescription : NSEntityDescription {
         return NSEntityDescription.entity(forEntityName: "Point", in: NavTableViewController.managedObjectContext)!
         
     }
@@ -23,21 +23,21 @@ public class Point: NSManagedObject, Codable {
         super.init(entity: entity, insertInto: context)
     }
     
-    public required init(){
+    public required init() {
         super.init(entity: entitydescription, insertInto: nil)
     }
 
-    public convenience init(id: String? = nil, lat: Double, lng: Double, time: NSDate) {
+    public convenience init(pathid: String? = nil, lat: Double, lng: Double, time: NSDate) {
         self.init()
-        if id != nil {
-            self.id = id!
+        if pathid != nil {
+            self.id = pathid!
         }
         latitude = lat
         longitude = lng
         timestamp = time as Date
     }
     
-    public static func from(_ loc: CLLocation) -> Point{
+    public static func from(_ loc: CLLocation) -> Point {
         return Point(lat: loc.coordinate.latitude, lng: loc.coordinate.longitude, time: loc.timestamp as NSDate)
     }
     
@@ -46,10 +46,10 @@ public class Point: NSManagedObject, Codable {
     }
     
     enum CodingKeys: String, CodingKey { // declaring our keys
-        case latitude = "latitude"
-        case longitude = "longitude"
-        case id = "id"
-        case timestamp = "timestamp"
+        case latitude
+        case longitude
+        case id
+        case timestamp
     }
     
     public convenience required init(from decoder: Decoder) throws {
@@ -62,8 +62,7 @@ public class Point: NSManagedObject, Codable {
         self.timestamp = try container.decode(Date.self, forKey: .timestamp) as Date
     }
     
-    public func encode(to encoder: Encoder) throws
-    {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(latitude, forKey: .latitude)
@@ -72,6 +71,5 @@ public class Point: NSManagedObject, Codable {
             try container.encode(timeDate, forKey: .timestamp)
         }
     }
-
 
 }

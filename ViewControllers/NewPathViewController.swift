@@ -34,11 +34,11 @@ public class NewPathViewController : BaseRecordingController {
             if let vc = storyboard?.instantiateViewController(withIdentifier: "recording") {
                 self.navigationController?.pushViewController(vc, animated: false)
             }
-        } else{
+        } else {
             btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )         
         }
     }
-    func onAuthStatusChanged(_ authstatus: CLAuthorizationStatus){
+    func onAuthStatusChanged(_ authstatus: CLAuthorizationStatus) {
         if authstatus != CLAuthorizationStatus.authorizedAlways, authstatus != CLAuthorizationStatus.authorizedWhenInUse {
             //not authorized, show message. prevent recording
             self.lblInstructions.text = "please enable location in settings"
@@ -49,7 +49,7 @@ public class NewPathViewController : BaseRecordingController {
         }
     }
     @objc
-    func startUpdating(){
+    func startUpdating() {
         recordingMgr.startUpdating(with: LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking)
     }
 }

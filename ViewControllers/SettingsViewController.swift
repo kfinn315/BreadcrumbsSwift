@@ -11,116 +11,103 @@ import UIKit
 import CoreLocation
 
 class SettingsViewController : UIViewController {
-   // @IBOutlet weak var btnDone: UIBarButtonItem!
+    // @IBOutlet weak var btnDone: UIBarButtonItem!
     @IBOutlet weak var segmentAccuracy: UISegmentedControl!    
     @IBOutlet weak var switchBGUpdates: UISwitch!
     @IBOutlet weak var sliderDist: UISlider!
     @IBOutlet weak var switchSigUpdates: UISwitch!
     @IBOutlet weak var lblDistance: UILabel!
     
-    override func viewDidLoad(){
+    override func viewDidLoad() {
         super.viewDidLoad()
         
-       // btnDone.action=#selector(btnDoneClicked)
+        // btnDone.action=#selector(btnDoneClicked)
         
-        sliderDist.minimumValue = 0;
-        sliderDist.maximumValue = 100;
+        sliderDist.minimumValue = 0
+        sliderDist.maximumValue = 100
         sliderDist.addTarget(self, action: #selector(updateDistLabel), for: .valueChanged )
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated);
+        super.viewWillAppear(animated)
         
-        segmentAccuracy.selectedSegmentIndex = getAccuracySegment(accuracy: LocationSettings.locationAccuracy);
-        sliderDist.value = getSliderVal(distance: LocationSettings.minimumDistance);
-        switchBGUpdates.isOn = LocationSettings.backgroundLocationUpdatesOn;
-        switchSigUpdates.isOn = LocationSettings.significantUpdatesOn;
+        segmentAccuracy.selectedSegmentIndex = getAccuracySegment(accuracy: LocationSettings.locationAccuracy)
+        sliderDist.value = getSliderVal(distance: LocationSettings.minimumDistance)
+        switchBGUpdates.isOn = LocationSettings.backgroundLocationUpdatesOn
+        switchSigUpdates.isOn = LocationSettings.significantUpdatesOn
         
         updateDistLabel()
     }
     
-    @objc func updateDistLabel(){
+    @objc func updateDistLabel() {
         lblDistance.text = String(sliderDist.value)+" meters"
     }
     
-    func getSliderVal(distance: Double) -> Float{
-        return Float(distance);
+    func getSliderVal(distance: Double) -> Float {
+        return Float(distance)
     }
     
-    func getDistanceVal(sliderval: Float) -> CLLocationDistance{
-        return CLLocationDistance(Double(sliderval));
+    func getDistanceVal(sliderval: Float) -> CLLocationDistance {
+        return CLLocationDistance(Double(sliderval))
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        LocationSettings.locationAccuracy = getSegmentAccuracy();
-        LocationSettings.minimumDistance = getDistanceVal(sliderval: sliderDist.value);
-        LocationSettings.backgroundLocationUpdatesOn = switchBGUpdates.isOn;
-        LocationSettings.significantUpdatesOn = switchSigUpdates.isOn;
-       // CoreLocationManager.updateSettings();
+        LocationSettings.locationAccuracy = getSegmentAccuracy()
+        LocationSettings.minimumDistance = getDistanceVal(sliderval: sliderDist.value)
+        LocationSettings.backgroundLocationUpdatesOn = switchBGUpdates.isOn
+        LocationSettings.significantUpdatesOn = switchSigUpdates.isOn
+        // CoreLocationManager.updateSettings()
     }
     
-    func getAccuracySegment(accuracy: CLLocationAccuracy)->Int{
-        var segment = 0;
-        switch(accuracy){
+    func getAccuracySegment(accuracy: CLLocationAccuracy) -> Int {
+        var segment = 0
+        switch(accuracy) {
         case kCLLocationAccuracyNearestTenMeters:
             segment = 2
-            break;
         case kCLLocationAccuracyBest:
             segment = 1
-            break;
         case kCLLocationAccuracyKilometer:
             segment = 4
-            break;
         case kCLLocationAccuracyHundredMeters:
             segment = 3
-            break;
         case kCLLocationAccuracyThreeKilometers:
             segment = 5
-            break;
         case kCLLocationAccuracyBestForNavigation:
             segment = 0
-            break;
         default:
-            break;
+            break
         }
         
-        return segment;
+        return segment
     }
     
-    func getSegmentAccuracy()->CLLocationAccuracy{
-        var accuracy : CLLocationAccuracy;
-        switch(segmentAccuracy.selectedSegmentIndex){
-        case 0: accuracy = kCLLocationAccuracyBestForNavigation;
-        break;
-        case 1: accuracy = kCLLocationAccuracyBest;
-        break;
-        case 2: accuracy = kCLLocationAccuracyNearestTenMeters; break
+    func getSegmentAccuracy() -> CLLocationAccuracy {
+        var accuracy : CLLocationAccuracy
+        switch(segmentAccuracy.selectedSegmentIndex) {
+        case 0: accuracy = kCLLocationAccuracyBestForNavigation
+        case 1: accuracy = kCLLocationAccuracyBest
+        case 2: accuracy = kCLLocationAccuracyNearestTenMeters
         case 3:
-            accuracy = kCLLocationAccuracyHundredMeters;
-            break;
+            accuracy = kCLLocationAccuracyHundredMeters
         case 4:
-            accuracy = kCLLocationAccuracyKilometer;
-            break;
+            accuracy = kCLLocationAccuracyKilometer
         case 5:
-            accuracy = kCLLocationAccuracyThreeKilometers;
-            break;
+            accuracy = kCLLocationAccuracyThreeKilometers
         default:
-            accuracy = kCLLocationAccuracyBestForNavigation;
-            break;
-            
+            accuracy = kCLLocationAccuracyBestForNavigation
         }
         
-        return accuracy;
+        return accuracy
     }
     
-    func setLocationAccuracy(accuracy:CLLocationAccuracy){
-        LocationSettings.locationAccuracy = accuracy;
+    func setLocationAccuracy(accuracy:CLLocationAccuracy) {
+        LocationSettings.locationAccuracy = accuracy
     }
     
-    func btnDoneClicked(){
+    func btnDoneClicked() {
         //save
         
-       // LocationSettings.locationAccuracy = getSegmentAccuracy();
+        // LocationSettings.locationAccuracy = getSegmentAccuracy()
         
         self.dismiss(animated: true, completion: nil)
     }

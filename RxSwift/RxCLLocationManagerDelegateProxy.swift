@@ -45,4 +45,3 @@ public class RxCLLocationManagerDelegateProxy
         self.didFailWithErrorSubject.on(.completed)
     }
 }
-

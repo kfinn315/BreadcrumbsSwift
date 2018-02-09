@@ -21,11 +21,7 @@ extension String {
             return String(self[substringStartIndex ..< substringEndIndex])
         }
         
-        internal func lastNDigits(_ n: Int) -> String? {
-            return substring(start:self.count-n, offsetBy: n)
-        }
-        
-        static func toJSON<T:Encodable>(_ obj: T) throws -> String?{
+        static func toJSON<T:Encodable>(_ obj: T) throws -> String? {
             return try String(data: JSONEncoder().encode(obj), encoding: String.Encoding.utf8)
         }
         
@@ -60,5 +56,3 @@ extension Float {
         return formatter.string(from: self as NSNumber)
     }
 }
-
-

@@ -31,7 +31,7 @@ public class PathDetailViewController : UIViewController {
         title = ""
         
         crumbsManager?.currentPathDriver?.drive(onNext: {[weak self] path in
-            guard path != nil else{
+            guard path != nil else {
                 print("error: currentPath is nil")
                 return
             }
@@ -42,9 +42,9 @@ public class PathDetailViewController : UIViewController {
             } else {
                 if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
                     if let size = self?.ivTop.frame.size {
-                        PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, dict) in
+                        PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, _) in
                             
-                            DispatchQueue.main.async{
+                            DispatchQueue.main.async {
                                 self?.ivTop.image = img
                                 self?.ivTop.setRounded()
                                 self?.ivTop.setNeedsLayout()
@@ -53,8 +53,7 @@ public class PathDetailViewController : UIViewController {
                     }
                 }
             }
-            
-            
+                        
             DispatchQueue.main.async {
                 self?.lblTitle.text = path?.displayTitle
                 self?.lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
@@ -72,7 +71,7 @@ public class PathDetailViewController : UIViewController {
         
         //self.navigationController?.presentTransparentNavigationBar()
         
-        if let coverimg = crumbsManager?.CurrentPath?.coverimg {
+        if let coverimg = crumbsManager?.currentPath?.coverimg {
             self.ivTop.image = UIImage(data: coverimg)
         }
         

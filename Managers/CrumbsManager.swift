@@ -1,4 +1,4 @@
-    //
+//
     //  CrumbsManager.swift
     //  BreadcrumbsSwift
     //
@@ -16,22 +16,24 @@
     import Photos
     
     class CrumbsManager {
-        private var currentPath : Variable<Path?> = Variable(nil)
+        private var managedObjectContext : NSManagedObjectContext?
+
         public var currentPathAlbum : Variable<[PHAsset]?> = Variable(nil)
         public var currentPathDriver : Driver<Path?>?
         public var currentAlbumTitle : String?
+        private var _currentPath : Variable<Path?> = Variable(nil)
+        private let currentPathUpdateObservable = PublishSubject<Path?>()
         
-        var pathsManager = PathsManager();
-        var pointsManager = PointsManager();
-        weak var delegate : CrumbsDelegate?;
+        var pathsManager = PathsManager()
+        var pointsManager = PointsManager()
+        //weak var delegate : CrumbsDelegate?
         var pedometer = CMPedometer()
-        var managedObjectContext : NSManagedObjectContext?
         var disposeBag = DisposeBag()
         
         private static var _shared : CrumbsManager?
         
-        public var CurrentPath: Path? {
-            return currentPath.value
+        public var currentPath: Path? {
+            return _currentPath.value
         }
         
         class var shared : CrumbsManager {
@@ -53,74 +55,72 @@
 //
 //                }.disposed(by: disposeBag)
 //
-            currentPathDriver = currentPath.asObservable().asDriver(onErrorJustReturn: nil)
+            currentPathDriver = _currentPath.asObservable().asDriver(onErrorJustReturn: nil)
+            currentPathDriver?.drive(onNext: { [weak self] path in self?.updatePhotoCollection(path?.albumId)
+            }).disposed(by: disposeBag)
+            
+//            currentPathDriver? = Observable.of(_currentPath.asObservable(), currentPathUpdateObservable.asObservable()).merge().asDriver(onErrorJustReturn: nil)
+            
             currentPathDriver?.drive(onNext: { [weak self] path in self?.updatePhotoCollection(path?.albumId)
             }).disposed(by: disposeBag)
         }
         
-        func setCoverImg(_ img: UIImage){
-            if currentPath.value != nil, let imgdata = UIImagePNGRepresentation(img) {
-                pathsManager.updatePath(id: currentPath.value!.id!, properties: ["coverimg" : imgdata], callback: { (id, error) in
+        func setCoverImg(_ img: UIImage) {
+            if _currentPath.value != nil, let imgdata = UIImagePNGRepresentation(img) {
+                pathsManager.updatePath(pathid: _currentPath.value!.id!, properties: ["coverimg" : imgdata], callback: { (_, error) in
                     //updated
                 })
                 //update subscribers here
+                currentPathUpdateObservable.onNext(_currentPath.value)
             }
         }
         
-        func UpdateCurrentAlbum(collection: PhotoCollection) {
-            if currentPath.value == nil {
+        func updateCurrentAlbum(collection: PhotoCollection) {
+            if _currentPath.value == nil {
                 return
             }
             
-            updatePhotoCollection(collection.id)
-            UpdateCurrentPath(albumid: collection.id)
+            updatePhotoCollection(collection.localid)
+            updateCurrentPath(albumid: collection.localid)
         }
         
-        private func updatePhotoCollection(_ id: String?){
-            if id != nil {
-                (currentAlbumTitle, currentPathAlbum.value) = PhotoManager.getImages(id!) ?? (nil,nil)
-            } else{
+        private func updatePhotoCollection(_ pathid: String?) {
+            if pathid != nil {
+                (currentAlbumTitle, currentPathAlbum.value) = PhotoManager.getImages(pathid!) ?? (nil,nil)
+            } else {
                 currentPathAlbum.value = nil
             }
         }
         
-        public func setCurrentPath(_ path: Path?){
-            currentPath.value = path
+        public func setCurrentPath(_ path: Path?) {
+            _currentPath.value = path
         }
         
-        //returns number of paths updated
-        private func UpdateCurrentPath(albumid: String) {
-            if currentPath.value == nil {
+        private func updateCurrentPath(albumid: String) {
+            if _currentPath.value == nil {
                 return
             }
             
-            currentPath.value?.albumId = albumid
+            _currentPath.value?.albumId = albumid
         }
         
-        //returns number of paths updated
-        func UpdateCurrentPath() {
-            if currentPath.value == nil {
-                return
-            }
-            
-            pathsManager.updatePath(currentPath.value!, callback: { [weak self] ids, error in
-                if self?.currentPath.value == nil {
+        public func updateCurrentPath() {
+            pathsManager.updatePath(_currentPath.value!, callback: { [weak self] _, error in
+                if self?._currentPath.value == nil {
                     return
                 }
-                if let id = self?.currentPath.value?.id {
-                    self?.currentPath.value = self?.pathsManager.getPath(id)
-                }
-                DispatchQueue.main.async{
-                    self?.delegate?.CrumbsUpdated?()
+                
+                if let id = self?._currentPath.value?.id {
+                    self?._currentPath.value = self?.pathsManager.getPath(id)
                 }
             })
         }
         
-        func SaveNewPath(start: Date, end: Date, title: String, notes: String?, callback: @escaping (Path?,Error?)->Void) {
+        func saveNewPath(start: Date, end: Date, title: String, notes: String?, callback: @escaping (Path?,Error?) -> Void) {
             var stepcount : Int64 = 0
             var distance : Double = 0.0
             
-            getSteps(start, end, callback: { (data, error) -> (Void) in
+            getSteps(start, end, callback: { (data, error) -> Void in
                 if error == nil, let stepdata = data {
                     print("steps: \(stepdata.numberOfSteps)")
                     print("est distance: \(stepdata.distance ?? 0)")
@@ -131,11 +131,11 @@
                 }
             })
             
-            pathsManager.savePath(start: start, end: end, title: title, notes: notes, steps: stepcount, distance: distance, callback: callback)
+            pathsManager.savePath(date: (start, end), title: title, notes: notes, steps: stepcount, distance: distance, callback: callback)
         }
         
         private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {
-            guard CMPedometer.isStepCountingAvailable() else{
+            guard CMPedometer.isStepCountingAvailable() else {
                 callback(nil, LocalError.failed(message: "step counting is not available"))
                 return
             }
@@ -146,7 +146,7 @@
         }
         
         func addPointToData(_ point: LocalPoint) {
-            print("append point");
+            print("append point")
             
             pointsManager.savePoint(point)
         }

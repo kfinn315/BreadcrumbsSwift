@@ -14,12 +14,12 @@ import RxCocoa
 import SwiftSimplify
 
 class MapViewController: UIViewController, MKMapViewDelegate {
-    let LINE_TOLERANCE : Float = 0.000005
-    let ANNOTATION_LAT_DELTA : CLLocationDistance = 0.010
+    let lineTolerance : Float = 0.000005
+    let annotationLatDelta : CLLocationDistance = 0.010
     let strokeColor = UIColor.red
     let lineWidth = CGFloat(2.0)
     var disposeBag = DisposeBag()
-    let pinAnnotationImageView = UIImage.circle(diameter: CGFloat(10), color: UIColor.orange);
+    let pinAnnotationImageView = UIImage.circle(diameter: CGFloat(10), color: UIColor.orange)
     
     @IBOutlet weak var mapView: MKMapView!
     
@@ -34,7 +34,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             self?.path = path
             if path != nil {
                 DispatchQueue.main.async {
-                    self?.LoadCrumb(path: path!)
+                    self?.loadCrumb(path: path!)
                 }
             }
         }).disposed(by: disposeBag)
@@ -57,12 +57,12 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         mapView.delegate = nil
     }
     
-    func AddImageAnnotations(_ assets: [PHAsset]){
-        DispatchQueue.global(qos: .userInitiated).async{
+    func AddImageAnnotations(_ assets: [PHAsset]) {
+        DispatchQueue.global(qos: .userInitiated).async {
             var annotations : [ImageAnnotation] = []
             for asset in assets {
                 if let loc = asset.location {
-                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: { (img, dict) in
+                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize.init(width: 50, height: 50), contentMode: .aspectFit, options: nil, resultHandler: { (img, _) in
                         let annotation = ImageAnnotation()
                         annotation.coordinate = loc.coordinate
                         annotation.title = asset.creationDate?.string ?? ""
@@ -77,73 +77,71 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         }
     }
     
-    //MARK:-from manager
+    // MARK: - from manager
     
     //load crumb and display
-    public func LoadCrumb(path: Path){
-        ClearMap();
+    public func loadCrumb(path: Path) {
+        clearMap()
         
-        AddLine(crumb: path);
-       // ZoomToFit();
+        addLine(crumb: path)
+       // ZoomToFit()
     }
     
-    func ClearMap(){
-        mapView?.removeAnnotations((mapView?.annotations)!);
+    func clearMap() {
+        mapView?.removeAnnotations((mapView?.annotations)!)
         mapView?.removeOverlays((mapView?.overlays)!)
     }
     
-    func ZoomToPoint(_ Point: CLLocation, animated: Bool){
-        var zoomRect = MKMapRectNull;
-        let mappoint = MKMapPointForCoordinate(Point.coordinate);
-        let pointRect = MKMapRectMake(mappoint.x, mappoint.y, 0.1, 0.1);
-        zoomRect = MKMapRectUnion(zoomRect, pointRect);
-        mapView?.setVisibleMapRect(zoomRect, animated: true);
+    func zoomToPoint(_ point: CLLocation, animated: Bool) {
+        var zoomRect = MKMapRectNull
+        let mappoint = MKMapPointForCoordinate(point.coordinate)
+        let pointRect = MKMapRectMake(mappoint.x, mappoint.y, 0.1, 0.1)
+        zoomRect = MKMapRectUnion(zoomRect, pointRect)
+        mapView?.setVisibleMapRect(zoomRect, animated: true)
     }
     
-    func ZoomToFit(){
-        mapView?.setVisibleMapRect(getZoomRect(from: mapView.annotations), animated: true);
+    func zoomToFit() {
+        mapView?.setVisibleMapRect(getZoomRect(from: mapView.annotations), animated: true)
     }
     
-    private func getZoomRect(from annotations: [MKAnnotation]) -> MKMapRect{
-        var zoomRect = MKMapRectNull;
-        for annotation in annotations
-        {
-            let annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
-            let pointRect = MKMapRectMake(annotationPoint.x, annotationPoint.y, 0.1, 0.1);
-            zoomRect = MKMapRectUnion(zoomRect, pointRect);
+    private func getZoomRect(from annotations: [MKAnnotation]) -> MKMapRect {
+        var zoomRect = MKMapRectNull
+        for annotation in annotations {
+            let annotationPoint = MKMapPointForCoordinate(annotation.coordinate)
+            let pointRect = MKMapRectMake(annotationPoint.x, annotationPoint.y, 0.1, 0.1)
+            zoomRect = MKMapRectUnion(zoomRect, pointRect)
         }
         return zoomRect
     }
     private func getZoomRect(from coords: [CLLocationCoordinate2D]) -> MKMapRect {
-        var zoomRect = MKMapRectNull;
+        var zoomRect = MKMapRectNull
         
-        for coord in coords
-        {
-            let point = MKMapPointForCoordinate(coord);
-            let pointRect = MKMapRectMake(point.x, point.y, 0.1, 0.1);
-            zoomRect = MKMapRectUnion(zoomRect, pointRect);
+        for coord in coords {
+            let point = MKMapPointForCoordinate(coord)
+            let pointRect = MKMapRectMake(point.x, point.y, 0.1, 0.1)
+            zoomRect = MKMapRectUnion(zoomRect, pointRect)
         }
         
         return MKMapRectInset(zoomRect, -5.0, -5.0)
     }
     
-    func AddAnnotation(Point: CLLocationCoordinate2D, Title: String){
-        let annotation = MKPointAnnotation();
+    func addAnnotation(point: CLLocationCoordinate2D, title: String) {
+        let annotation = MKPointAnnotation()
         
-        annotation.coordinate = Point
-        annotation.title = Title;
+        annotation.coordinate = point
+        annotation.title = title
         
-        mapView?.setCenter(Point, animated: false)
+        mapView?.setCenter(point, animated: false)
     }
     
-    func AddLine(crumb: Path){
+    func addLine(crumb: Path) {
         let points = crumb.getPoints()
         
         var coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
         
         if coordinates.count > 5 {
         //simplify coordinates
-            coordinates = SwiftSimplify.simplify(coordinates, tolerance: LINE_TOLERANCE)
+            coordinates = SwiftSimplify.simplify(coordinates, tolerance: lineTolerance)
         }
         
         //add annotation to first and last coords
@@ -166,26 +164,24 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     func setVisibleMapArea(polyline: MKPolyline, edgeInsets: UIEdgeInsets, animated: Bool = false) {
         mapView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: edgeInsets, animated: animated)
     }
-
     
-    //MARK:- MapViewDelegate implementation
+    // MARK: - MapViewDelegate implementation
 
     public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let renderer = MKPolylineRenderer(overlay: overlay)
-        renderer.strokeColor = strokeColor;
-        renderer.lineWidth = lineWidth;
+        renderer.strokeColor = strokeColor
+        renderer.lineWidth = lineWidth
         
         return renderer
     }
     
     public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        if annotation is ImageAnnotation {
-            let imageA = annotation as! ImageAnnotation
-            return imageA.getPinView()
+        if annotation is ImageAnnotation, let imgAnnotation = annotation as? ImageAnnotation {
+            return imgAnnotation.getPinView()
         } else {
             let view = MKAnnotationView()
             view.image = pinAnnotationImageView
-            return view;
+            return view
         }
     }
     
@@ -202,14 +198,14 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 //        }
 //    }
     
-    public func getSnapshot(_ callback: @escaping MKMapSnapshotCompletionHandler){
+    public func getSnapshot(_ callback: @escaping MKMapSnapshotCompletionHandler) {
         let options = MKMapSnapshotOptions()
         if #available(iOS 11.0, *) {
             options.mapType = MKMapType.mutedStandard
         } else {
             // Fallback on earlier versions
         }
-        if let points = CrumbsManager.shared.CurrentPath?.getPoints() {
+        if let points = CrumbsManager.shared.currentPath?.getPoints() {
             let coordinates = points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
             options.mapRect = getZoomRect(from: coordinates)
         }
@@ -224,11 +220,11 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 class ImageAnnotation : MKPointAnnotation {
     var image : UIImage?
     
-    override init(){
+    override init() {
         super.init()
     }
     
-    public func getPinView() -> MKPinAnnotationView{
+    public func getPinView() -> MKPinAnnotationView {
         let pin = MKPinAnnotationView(annotation: self, reuseIdentifier: "imagePin")
         pin.pinTintColor = UIColor.darkGray
         pin.canShowCallout = true

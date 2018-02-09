@@ -14,7 +14,7 @@ import UIKit
 class CoreDataManager {
     var context : NSManagedObjectContext?
     
-    init(){
+    init() {
         if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
             self.context = appDelegate.managedObjectContext
         }
@@ -38,9 +38,9 @@ class PointsManager : CoreDataManager {
             point.id = localpoint.timestamp?.string
             
             if localcontext!.hasChanges {
-                do{
+                do {
                     try localcontext!.save()
-                } catch{
+                } catch {
                     print("error \(error)")
                 }
             }
@@ -48,7 +48,7 @@ class PointsManager : CoreDataManager {
     }
     
     func clearPoints() {
-        print("clearPoints");
+        print("clearPoints")
         
         guard context != nil else {
             return
@@ -61,19 +61,19 @@ class PointsManager : CoreDataManager {
             let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: "Point")
             let request = NSBatchDeleteRequest(fetchRequest: fetch)
             
-            do{
+            do {
                 try localcontext!.execute(request)
-            } catch{
+            } catch {
                 print("error \(error)")
             }
             
         }
     }
     
-    func fetchPoints() -> Array<Point> {
-        var points = Array<Point>();
+    func fetchPoints() -> [Point] {
+        var points = [Point]()
         
-        print("fetchPoints -> fetching points");
+        print("fetchPoints -> fetching points")
         
         guard context != nil else {
             return []
@@ -85,9 +85,9 @@ class PointsManager : CoreDataManager {
             
             let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
             
-            do{
+            do {
                 points = try localcontext!.fetch(fetchRequest)
-            } catch{
+            } catch {
                 print("error \(error)")
             }
             
@@ -100,7 +100,7 @@ class PointsManager : CoreDataManager {
 }
 class PathsManager : CoreDataManager {
     //save all points to a path
-    func savePath(start: Date, end: Date, title: String, notes: String?, steps: Int64?, distance: Double?, callback: @escaping (Path?,Error?)->()) {
+    func savePath(date: (Date, Date), title: String, notes: String?, steps: Int64?, distance: Double?, callback: @escaping (Path?,Error?) -> Void) {
         
         guard context != nil else {
             return
@@ -112,9 +112,9 @@ class PathsManager : CoreDataManager {
             var points : [Point] = []
             let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
             
-            do{
+            do {
                 points = try localcontext!.fetch(fetchRequest)
-            } catch{
+            } catch {
                 print("error \(error)")
             }
             
@@ -124,61 +124,58 @@ class PathsManager : CoreDataManager {
             
             //get location names
             if let point1 = points.first {
-                CLGeocoder().reverseGeocodeLocation(CLLocation(point1.coordinates), completionHandler: {
-                    [weak self] (placemarks, error) in
-                    guard let locality = placemarks?[0].locality, path.id != nil  else{
+                CLGeocoder().reverseGeocodeLocation(CLLocation(point1.coordinates), completionHandler: { [weak self] (placemarks, error) in
+                    guard let locality = placemarks?[0].locality, path.id != nil  else {
                         return
                     }
                     
-                    self?.updatePath(id: path.id!, properties: ["locations":locality])
-                    { (objId, error) in //done
+                    self?.updatePath(pathid: path.id!, properties: ["locations":locality]) { (_, error) in //done
                         //have subscribers reload
                     }
                 })
             }
                     
-            do{
+            do {
                 path.pointsJSON = String(data: try JSONEncoder().encode(points), encoding: .utf8)
-            }
-            catch{
+            } catch {
                 print("error "+error.localizedDescription)
             }
             
-            path.startdate = start
-            path.enddate = end
+            path.startdate = date.0
+            path.enddate = date.1
             path.title = title
             path.notes = notes
             path.distance = distance ?? 0
             path.stepcount = steps ?? 0
             path.id = path.startdate?.string
             
-            do{
-                if self.context!.hasChanges{
+            do {
+                if self.context!.hasChanges {
                     try localcontext!.save()
                     localcontext!.refreshAllObjects()
                     callback(path, nil)
                 }
-            } catch{
+            } catch {
                 print("error \(error)")
                 callback(nil, error)
             }
         }
     }
     
-    func getPath(_ id: String) -> Path? {
+    func getPath(_ pathid: String) -> Path? {
         var path : Path?
         
         guard context != nil else {
             return nil
         }
         
-        do{
+        do {
             let fetchRequest : NSFetchRequest<Path> = Path.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id = %@", id)
+            fetchRequest.predicate = NSPredicate(format: "id = %@", pathid)
             fetchRequest.fetchLimit = 1
             
             path = try context!.fetch(fetchRequest).first
-        } catch{
+        } catch {
             print("error \(error)")
         }
         
@@ -188,7 +185,7 @@ class PathsManager : CoreDataManager {
     func getPaths() throws -> [Path] {
         var paths : [Path] = []
         
-        guard context != nil else{
+        guard context != nil else {
             return []
         }
         
@@ -197,8 +194,8 @@ class PathsManager : CoreDataManager {
         
         return paths
     }
-    func updatePath(id: String, properties: [AnyHashable : Any], callback: @escaping ([NSManagedObjectID],Error?)->()) {
-        guard context != nil else{
+    func updatePath(pathid: String, properties: [AnyHashable : Any], callback: @escaping ([NSManagedObjectID],Error?) -> Void) {
+        guard context != nil else {
             callback([],nil)
             return
         }
@@ -207,10 +204,10 @@ class PathsManager : CoreDataManager {
             [weak localcontext = self.context] in
             guard localcontext != nil else { return }
             
-            do{
+            do {
                 let request = NSBatchUpdateRequest(entityName: "Path")
                 request.propertiesToUpdate = properties
-                request.predicate = NSPredicate(format: "id = %@", id)
+                request.predicate = NSPredicate(format: "id = %@", pathid)
                 request.resultType = NSBatchUpdateRequestResultType.updatedObjectIDsResultType
                 
                 let resObject = try localcontext!.execute(request)
@@ -226,14 +223,14 @@ class PathsManager : CoreDataManager {
                     
                     callback(updatedIds,nil)
                 }
-            } catch{
+            } catch {
                 print("error \(error)")
                 callback([],error)
             }
         }
     }
     
-    func updatePath(_ path: Path, callback: @escaping ([NSManagedObjectID],Error?)->()) {
+    func updatePath(_ path: Path, callback: @escaping ([NSManagedObjectID],Error?) -> Void ) {
         var props : [AnyHashable : Any] = ["title":path.title ?? "", "notes":path.notes ?? "", "locations":path.locations ?? ""]
         
         if let startdate = path.startdate {
@@ -244,6 +241,6 @@ class PathsManager : CoreDataManager {
             props["enddate"] = enddate
         }
         
-        updatePath(id: path.id!, properties: props, callback: callback)
+        updatePath(pathid: path.id!, properties: props, callback: callback)
     }
 }
