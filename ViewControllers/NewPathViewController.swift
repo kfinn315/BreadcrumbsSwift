@@ -41,7 +41,7 @@ public class NewPathViewController : BaseRecordingController {
     func onAuthStatusChanged(_ authstatus: CLAuthorizationStatus) {
         if authstatus != CLAuthorizationStatus.authorizedAlways, authstatus != CLAuthorizationStatus.authorizedWhenInUse {
             //not authorized, show message. prevent recording
-            self.lblInstructions.text = "please enable location in settings"
+            self.lblInstructions.text = "Please enable location in settings"
             self.btnStart.isEnabled = false
         } else {
             self.lblInstructions.text = "Your path accuracy will be set based on the activity type you select."

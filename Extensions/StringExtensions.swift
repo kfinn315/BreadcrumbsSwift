@@ -27,6 +27,15 @@ extension String {
         
 }
 
+extension NSNumber {
+    var formatted : String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumSignificantDigits = 0
+        formatter.groupingSeparator = ","
+        return formatter.string(from: self)
+    }
+}
 extension Int64 {
     var formatted : String? {
         let formatter = NumberFormatter()

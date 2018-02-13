@@ -14,7 +14,7 @@ import CloudKit
 import RxCocoa
 import RxSwift
 
-public class BaseRecordingController : UIViewController,CLLocationManagerDelegate, CrumbsDelegate {
+public class BaseRecordingController : UIViewController,CLLocationManagerDelegate {
     var recordingMgr = RecordingManager.shared
     
     public override func viewDidLoad() {
@@ -27,7 +27,7 @@ public class BaseRecordingController : UIViewController,CLLocationManagerDelegat
     
     //delegate callbacks
     func errorUpdatingLocations(_ error: Error) {
-        print("Could not update locations. \(error), \(error.localizedDescription)")
+        log.error("Could not update locations. \(error), \(error.localizedDescription)")
         
         let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
         
@@ -35,8 +35,8 @@ public class BaseRecordingController : UIViewController,CLLocationManagerDelegat
         self.present(alert, animated: true, completion: nil)
     }
     
-    func errorSavingData(_ error: Error) {
-        print("Could not save data. \(error), \(error.localizedDescription)")
+    func errorSavingData(_ error: Error) {        
+        log.error("Could not save data. \(error), \(error.localizedDescription)")
         let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
         
         alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))

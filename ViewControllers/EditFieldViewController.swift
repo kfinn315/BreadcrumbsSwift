@@ -11,7 +11,7 @@ import Eureka
 import RxCocoa
 import RxSwift
 
-class EditPathViewController : FormViewController, CrumbsDelegate {
+class EditPathViewController : FormViewController {
     var crumbsManager : CrumbsManager?
     var dateformatter : DateFormatter?
     var disposeBag = DisposeBag()
@@ -29,7 +29,7 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
         
         crumbsManager = CrumbsManager.shared
         //crumbsManager?.delegate = self
-        crumbsManager?.currentPathDriver?.drive(onNext: { [weak self] path in
+        crumbsManager?.currentPathDriver?.drive(onNext: { [weak self] path in            
             self?.path = path
             self?.updateData()
         }).disposed(by: disposeBag)
@@ -81,6 +81,7 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
     }
     
     func updateData() {
+        
         for row in form.allRows {
             if let tag = row.tag {
                 switch tag {
@@ -127,7 +128,12 @@ class EditPathViewController : FormViewController, CrumbsDelegate {
                 }
             }
         }
-        CrumbsManager.shared.updateCurrentPath()
+        do {
+            try CrumbsManager.shared.updateCurrentPathInCoreData()
+        } catch {
+            log.error(error.localizedDescription)
+        }
+        crumbsUpdated()
     }
     
     func crumbsUpdated() {

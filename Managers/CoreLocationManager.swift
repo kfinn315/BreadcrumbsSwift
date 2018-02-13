@@ -96,7 +96,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate {
         updateSettings(accuracy)
         
         updating = true
-        print("start Location Updates()")
+        log.debug("start Location Updates()")
         locationManager.startUpdatingLocation()
     }
     
@@ -109,7 +109,7 @@ class CoreLocationManager: NSObject, CLLocationManagerDelegate {
         locationManager.stopMonitoringSignificantLocationChanges()
         locationManager.stopUpdatingLocation()
 
-        print("Stop location updates")
+        log.debug("Stop location updates")
         updating = false
         delegate?.didStopLocationUpdates?()
     }

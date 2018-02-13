@@ -14,7 +14,7 @@ import RxCoreData
 @objc(Path)
 public class Path: NSManagedObject, Persistable, IdentifiableType {
     var entitydescription : NSEntityDescription {
-        return NSEntityDescription.entity(forEntityName: "Path", in: NavTableViewController.managedObjectContext)!
+        return NSEntityDescription.entity(forEntityName: "Path", in: AppDelegate.managedObjectContext!)!
     }
     public static var entityName: String = "Path"
     
@@ -25,7 +25,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
                 return try decoder.decode([Point].self, from: json)
             }
         } catch {
-            print("error "+error.localizedDescription)
+            log.error(error.localizedDescription)
         }
         return []
 
@@ -46,9 +46,9 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         notes = entity.value(forKey: "notes") as? String
         startdate = entity.value(forKey: "startdate") as? Date
         enddate = entity.value(forKey: "enddate") as? Date
-        duration = (entity.value(forKey: "duration") as? Float)!
-        distance = (entity.value(forKey: "distance") as? Double)!
-        stepcount = (entity.value(forKey: "stepcount") as? Int64)!
+        duration = entity.value(forKey: "duration") as? NSNumber
+        distance = entity.value(forKey: "distance") as? NSNumber
+        stepcount = entity.value(forKey: "stepcount") as? NSNumber
         pointsJSON = entity.value(forKey: "pointsJSON") as? String
         albumId = entity.value(forKey: "albumId") as? String
         coverimg = entity.value(forKey: "coverimg") as? Data
@@ -70,8 +70,8 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         
         do {
             try entity.managedObjectContext?.save()
-        } catch let e {
-            print(e)
+        } catch {            
+            log.error(error.localizedDescription)
         }
     }
     

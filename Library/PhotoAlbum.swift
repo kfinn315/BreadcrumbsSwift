@@ -41,10 +41,10 @@ class PhotoAlbum: NSObject {
     func requestAuthorizationHandler(status: PHAuthorizationStatus) {
         if PHPhotoLibrary.authorizationStatus() == PHAuthorizationStatus.authorized {
             // ideally this ensures the creation of the photo album even if authorization wasn't prompted till after init was done
-            print("trying again to create the album")
+            log.debug("trying again to create the album")
             self.createAlbum()
         } else {
-            print("should really prompt the user to let them know it's failed")
+            log.error("should really prompt the user to let them know it's failed")
         }
     }
     
@@ -56,7 +56,7 @@ class PhotoAlbum: NSObject {
                 self.assetCollection = self.fetchAssetCollectionForAlbum()
                 self.id = self.assetCollection.localIdentifier
             } else {
-                print("error \(error?.localizedDescription ?? "")")
+                log.error("error \(error?.localizedDescription ?? "")")
             }
         })
     }
@@ -75,7 +75,7 @@ class PhotoAlbum: NSObject {
     func addPhotosInTimespan(start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?) -> Void) {
         PHPhotoLibrary.shared().performChanges({
             guard self.assetCollection != nil else {
-                print("error asset collection is nil")
+                log.error("error asset collection is nil")
                 return
             }
             
@@ -86,7 +86,7 @@ class PhotoAlbum: NSObject {
             albumChangeRequest?.addAssets(fetchresult)
         }, completionHandler: { (_, error) in
             if error !=  nil {
-                print("error "+error!.localizedDescription)
+                log.error("error "+error!.localizedDescription)
             }
             
             var photoCollection : PhotoCollection? = nil

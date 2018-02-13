@@ -9,6 +9,9 @@
 import UIKit
 
 class PageViewController : UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
+    
+    var pageControl : UIPageControl
+    
     private(set) lazy var orderedViewControllers: [UIViewController] = {
         if let storyboard = self.storyboard {
             return [storyboard.instantiateViewController(withIdentifier: "Detail"),
@@ -20,8 +23,9 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     }()
     
     @IBOutlet weak var btnEdit: UIBarButtonItem!
-    
     required init?(coder: NSCoder) {
+        pageControl = UIPageControl()
+        
         super.init(coder: coder)
     }
     
@@ -33,10 +37,27 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         self.orderedViewControllers[0].view.tag = 0
         self.orderedViewControllers[1].view.tag = 1
         self.orderedViewControllers[2].view.tag = 2
-
-        if let vc = orderedViewControllers.first {
-            self.setViewControllers([vc], direction: .forward, animated: true, completion: nil)
+        
+        if let firstController = orderedViewControllers.first {
+            self.setViewControllers([firstController], direction: .forward, animated: true, completion: nil)
         }
+        
+        pageControl.transform = pageControl.transform.rotated(by: .pi/2)
+        self.view.addSubview(pageControl)
+        pageControl.translatesAutoresizingMaskIntoConstraints = false
+        if #available(iOS 11.0, *) {
+            NSLayoutConstraint.activate([
+                pageControl.leftAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.leftAnchor, constant: 0),
+                pageControl.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.centerYAnchor, constant: 0)])
+        } else {
+            // Fallback on earlier versions
+            NSLayoutConstraint.activate([
+                pageControl.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 0),
+                pageControl.topAnchor.constraint(equalTo: self.view.centerYAnchor, constant: 0)
+                ])
+        }
+        
+        pageControl.numberOfPages = self.orderedViewControllers.count
     }
     
     override func viewDidLayoutSubviews() {
@@ -51,7 +72,7 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     }
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
         let nextindex = viewController.view.tag - 1
-      
+        
         if nextindex >= 0 {
             return orderedViewControllers[nextindex]
         }
@@ -75,8 +96,18 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
     func presentationIndex(for pageViewController: UIPageViewController) -> Int {
         return pageViewController.viewControllers?.first?.view?.tag ?? 0
     }
-
+    
     @objc func editPath() {
         self.navigationController?.pushViewController(EditPathViewController(), animated: true)
+    }
+    
+    func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
+        // this will get you currently presented view controller
+        guard let selectedVC = pageViewController.viewControllers?.first else { return }
+        
+        // and its index in the dataSource's controllers (I'm using force unwrap, since in my case pageViewController contains only view controllers from my dataSource)
+        let selectedIndex = selectedVC.view.tag
+        // and we update the current page in pageControl
+        self.pageControl.currentPage = selectedIndex
     }
 }

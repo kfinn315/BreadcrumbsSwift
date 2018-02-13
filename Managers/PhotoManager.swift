@@ -30,7 +30,7 @@ public class PhotoCollection {
                     self?.thumbnail = img
                 })
             } else {
-                print("unable to fetch asset of PhotoCollection")
+                log.error("unable to fetch asset of PhotoCollection")
             }
         }
     }

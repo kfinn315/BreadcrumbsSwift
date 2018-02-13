@@ -127,3 +127,16 @@ extension CLLocation {
         self.init(latitude: loc.latitude, longitude: loc.longitude)
     }
 }
+
+extension Path {
+    var dateSpan : String {
+        var spanString = ""
+        if startdate != nil, enddate != nil {
+            if(startdate!.datestring == enddate?.datestring) {
+                spanString += startdate!.datestring
+                spanString += " \(startdate!.timestring) - \(enddate!.timestring)"
+            }
+        }
+        return spanString
+    }
+}

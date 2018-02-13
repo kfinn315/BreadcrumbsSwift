@@ -17,37 +17,58 @@ public class AlbumsTableViewController : UITableViewController {
     var disposeBag = DisposeBag()
     
     var data : [PhotoCollection] = []
-    var hasPermission = true
+    var hasPermission = Variable<Bool>(false)
+    var hasPermissionDriver : Driver<Bool>?
     
     override public func viewDidLoad() {
         super.viewDidLoad()
         
         setupPhotos()
+        
+        hasPermissionDriver = hasPermission.asObservable().asDriver(onErrorJustReturn: true)
+        
+        hasPermissionDriver?.drive(onNext: { [weak self] (hasPermission) in
+            guard self != nil else { return }
+            
+            if hasPermission {
+                self!.tableView.backgroundView = nil
+                self!.data = PhotoManager.getCollections()
+                self!.tableView.reloadData()
+            }
+            else {
+                let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self!.tableView.bounds.size.width, height: self!.view.bounds.size.height))
+                emptyLabel.textAlignment = NSTextAlignment.center
+                emptyLabel.numberOfLines = 0
+                emptyLabel.text          = "Please allow this app to access Photos."
+                emptyLabel.font          = emptyLabel.font.withSize(10)
+                self!.tableView.backgroundView = emptyLabel
+                self!.tableView.reloadData()
+            }
+        }).disposed(by: disposeBag)
     }
     
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
     }
+    
     private func setupPhotos() {
         let photoAuth = PHPhotoLibrary.authorizationStatus()
         
         if photoAuth != PHAuthorizationStatus.authorized {
-            hasPermission = false
-            let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width:tableView.bounds.size.width, height: view.bounds.size.height))
-            emptyLabel.textAlignment = NSTextAlignment.center
-            emptyLabel.numberOfLines = 0
-            emptyLabel.text          = "Please allow this app to access Photos."
-            emptyLabel.font          = emptyLabel.font.withSize(10)
-            tableView.backgroundView = emptyLabel
+            PHPhotoLibrary.requestAuthorization({ (status) in
+                if status == PHAuthorizationStatus.authorized{
+                    self.hasPermission.value = true
+                } else{
+                    self.hasPermission.value = false
+                }
+            })
         } else {
-            tableView.backgroundView = nil
-            self.data = PhotoManager.getCollections()
-            self.tableView.reloadData()
+            hasPermission.value = true
         }
     }
     
     public override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0, hasPermission {
+        if section == 0, hasPermission.value {
             return data.count
         }
         
@@ -68,22 +89,22 @@ public class AlbumsTableViewController : UITableViewController {
         
         let container = data[indexPath.row]
         cell.textLabel?.text = container.collection.localizedTitle
-
+        
         cell.imageView?.image = container.thumbnail
-//
-//        if container.asset != nil {
-//        cell.tag = Int(manager.requestImage(for: container.asset!,
-//                                            targetSize: CGSize(width: 100.0, height: 100.0),
-//                                            contentMode: .aspectFill,
-//                                            options: nil) { [weak self] (result, _) in
-//                                                if let destinationCell = tableView.cellForRow(at: indexPath) {
-//                                                    self?.data[indexPath.row].thumbnail = result
-//                                                    destinationCell.imageView?.image = result
-//                                                    destinationCell.setNeedsLayout()
-//                                                }
-//        })
-//        }
-//
+        //
+        //        if container.asset != nil {
+        //        cell.tag = Int(manager.requestImage(for: container.asset!,
+        //                                            targetSize: CGSize(width: 100.0, height: 100.0),
+        //                                            contentMode: .aspectFill,
+        //                                            options: nil) { [weak self] (result, _) in
+        //                                                if let destinationCell = tableView.cellForRow(at: indexPath) {
+        //                                                    self?.data[indexPath.row].thumbnail = result
+        //                                                    destinationCell.imageView?.image = result
+        //                                                    destinationCell.setNeedsLayout()
+        //                                                }
+        //        })
+        //        }
+        //
         return cell
     }
     
@@ -93,5 +114,5 @@ public class AlbumsTableViewController : UITableViewController {
         
         self.navigationController?.popViewController(animated: true)
     }
-
+    
 }

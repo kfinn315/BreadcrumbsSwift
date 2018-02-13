@@ -33,7 +33,7 @@ public class RecordingManager {
         locationManager.location
             .drive(onNext: { [unowned self] (cllocation : CLLocation) in
                 //this is called when there's a new location
-                print("location manager didUpdateLocations")
+                log.debug("location manager didUpdateLocations")
                 
                 self.crumbsManager?.addPointToData(LocalPoint.from(cllocation))
             }).disposed(by: disposeBag)

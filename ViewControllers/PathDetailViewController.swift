@@ -24,7 +24,7 @@ public class PathDetailViewController : UIViewController {
     @IBOutlet weak var lblDuration: UILabel!
     @IBOutlet weak var lblDistance: UILabel!
     @IBOutlet weak var lblSteps: UILabel!
-
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -32,10 +32,10 @@ public class PathDetailViewController : UIViewController {
         
         crumbsManager?.currentPathDriver?.drive(onNext: {[weak self] path in
             guard path != nil else {
-                print("error: currentPath is nil")
+                log.error("error: currentPath is nil")
                 return
             }
-
+            
             if let coverimg = path!.coverimg {
                 self?.ivTop.image = UIImage(data: coverimg)
                 self?.ivTop.setRounded()
@@ -53,14 +53,14 @@ public class PathDetailViewController : UIViewController {
                     }
                 }
             }
-                        
+            
             DispatchQueue.main.async {
                 self?.lblTitle.text = path?.displayTitle
-                self?.lblDate.text = "\(path?.startdate?.string ?? "") - \(path?.enddate?.string ?? "")"
+                self?.lblDate.text = "\(path?.dateSpan ?? path?.startdate?.datestring ?? "?")"
                 self?.tvNotes.text = "\(path?.notes ?? "")"
-                self?.lblSteps.text = path?.stepcount.formatted
-                self?.lblDistance.text = path?.distance.formatted
-                self?.lblDuration.text = path?.duration.formatted
+                self?.lblSteps.text = path?.stepcount?.formatted ?? "?"
+                self?.lblDistance.text = path?.distance?.formatted ?? "?"
+                self?.lblDuration.text = path?.duration?.formatted ?? "?"
             }
         }).disposed(by: disposeBag)
         

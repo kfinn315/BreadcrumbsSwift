@@ -2,12 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSMotionUsageDescription</key>
-	<string>To record your steps</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Select a photo library to a path</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Record your location for Crumbs</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -45,8 +39,14 @@
 	<array>
 		<string>MKDirectionsModePedestrian</string>
 	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Record your location for Crumbs</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Track user&apos;s location</string>
+	<string>Track user's location</string>
+	<key>NSMotionUsageDescription</key>
+	<string>To record your steps</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select a photo library to a path</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
@@ -62,6 +62,7 @@
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>

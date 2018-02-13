@@ -9,6 +9,7 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     var disposeBag = DisposeBag()
     
     private var assetThumbnailSize: CGSize?
+    
     lazy var albumAlert : UIAlertController = {
         let alert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
         let actionExisting = UIAlertAction.init(title: "Choose an Existing Album", style: UIAlertActionStyle.default, handler: { [weak self] _ in
@@ -19,8 +20,12 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         
         return alert
     }()
+    
     var crumbsManager = CrumbsManager.shared
+
     private var assets : [PHAsset]?
+    var hasPermission = Variable<Bool>(false)
+    var hasPermissionDriver : Driver<Bool>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -34,6 +39,25 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
                 self?.refreshData()
             }
         }).disposed(by: disposeBag)
+        
+        hasPermissionDriver = hasPermission.asObservable().asDriver(onErrorJustReturn: true)
+        hasPermissionDriver?.drive(onNext: { [weak self] (hasPermission) in
+            guard self != nil else { return }
+            
+            if hasPermission {
+                self!.collectionView.backgroundView = nil
+                self!.collectionView.reloadData()
+            }
+            else {
+                let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self!.collectionView.bounds.size.width, height: self!.view.bounds.size.height))
+                emptyLabel.textAlignment = NSTextAlignment.center
+                emptyLabel.numberOfLines = 0
+                emptyLabel.text          = "Please allow this app to access Photos."
+                emptyLabel.font          = emptyLabel.font.withSize(10)
+                self!.collectionView.backgroundView = emptyLabel
+                self!.collectionView.reloadData()
+            }
+        }).disposed(by: disposeBag)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -41,6 +65,20 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         if let layout = collectionView?.collectionViewLayout as? UICollectionViewFlowLayout {
             let cellSize = layout.itemSize
             self.assetThumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
+        }
+        
+        let photoAuth = PHPhotoLibrary.authorizationStatus()
+        
+        if photoAuth != PHAuthorizationStatus.authorized {
+            PHPhotoLibrary.requestAuthorization({ (status) in
+                if status == PHAuthorizationStatus.authorized{
+                    self.hasPermission.value = true
+                } else{
+                    self.hasPermission.value = false
+                }
+            })
+        } else {
+            hasPermission.value = true
         }
     }
     
@@ -57,12 +95,14 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     // MARK: UICollectionViewDataSource
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
-        return 1
+        if hasPermission.value {
+            return 1
+        } else{
+            return 0
+        }
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of items
         var count: Int = 1
         
         if(self.assets != nil) {
@@ -81,7 +121,7 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
             
         } else {
             
-            collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath)
+            cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath)
             
             //Modify the cell
             if assets?.count ?? 0 > indexPath.item, let asset = self.assets?[indexPath.item], let assetsize = assetThumbnailSize {
@@ -139,7 +179,7 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
                     }
                 }
                 if error != nil {
-                    print("error "+error!.localizedDescription)
+                    log.error(error!.localizedDescription)
                 }
             })
         }

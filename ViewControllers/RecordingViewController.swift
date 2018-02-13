@@ -11,6 +11,8 @@ import UIKit
 import Photos
 
 public class RecordingViewController : BaseRecordingController {
+    let crumbsManager = CrumbsManager.shared
+    
     lazy var saveAlert : UIAlertController = {
         let alert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
         let actionSave = UIAlertAction.init(title: "Save", style: UIAlertActionStyle.default, handler: {(_) -> Void in self.buttonSaveClicked()})
@@ -52,36 +54,49 @@ public class RecordingViewController : BaseRecordingController {
     func buttonStopClicked() {
         recordingMgr.stopUpdating()
         timer?.invalidate()
+        log.debug("show save alert")
         self.present(saveAlert, animated: true, completion: nil)
     }
     
     func buttonSaveClicked() {
         recordingMgr.save { [weak self] path, error in
+            log.debug("saving path")
             if error == nil, path != nil {
-                CrumbsManager.shared.setCurrentPath(path)
+                self?.crumbsManager.setCurrentPath(path)
 
                 //get map snapshot
                 MapViewController().getSnapshot { snapshot, error in
-                    if error == nil, snapshot != nil {
-                        CrumbsManager.shared.setCoverImg(snapshot!.image)
+                    log.debug("getting map snapshot")
+                    guard error == nil else {
+                        log.error(error!.localizedDescription)
+                        return
+                    }
+                    
+                    if snapshot != nil {
+                        self?.crumbsManager.setCoverImage(snapshot!.image)
                     }
                    
-                    var firstVC = self?.navigationController?.viewControllers.first
-                    if firstVC == nil {
-                        firstVC = self?.storyboard?.instantiateViewController(withIdentifier: "table view")
-                    }
-                    let editVC = EditPathViewController()
-                    editVC.isNewPath = true
-                    
-                    let newVC_list : [UIViewController] = [firstVC!, editVC]
-                    
-                    DispatchQueue.main.async {
-                        self?.navigationController?.setViewControllers(newVC_list, animated: true)
-                    }
+                    self?.navigateToEditView()
                 }
             } else {
-                print("error \(error)")
+                log.error(error?.localizedDescription ?? "no error message")
             }
+        }
+    }
+    
+    func navigateToEditView(){
+        log.debug("navigate to edit view")
+        var firstVC = self.navigationController?.viewControllers.first
+        if firstVC == nil {
+            firstVC = self.storyboard?.instantiateViewController(withIdentifier: "table view")
+        }
+        let editVC = EditPathViewController()
+        editVC.isNewPath = true
+        
+        let newVC_list : [UIViewController] = [firstVC!, editVC]
+        
+        DispatchQueue.main.async {
+            self.navigationController?.setViewControllers(newVC_list, animated: true)
         }
     }
     
