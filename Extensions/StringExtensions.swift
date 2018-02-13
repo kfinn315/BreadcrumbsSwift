@@ -31,7 +31,8 @@ extension NSNumber {
     var formatted : String? {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.maximumSignificantDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.maximumSignificantDigits = 2
         formatter.groupingSeparator = ","
         return formatter.string(from: self)
     }
@@ -41,6 +42,7 @@ extension Int64 {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumSignificantDigits = 0
+        formatter.maximumFractionDigits = 0
         formatter.groupingSeparator = ","
         return formatter.string(from: self as NSNumber)
     }
@@ -51,6 +53,7 @@ extension Double {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumSignificantDigits = 2
+        formatter.maximumFractionDigits = 2
         formatter.groupingSeparator = ","
         return formatter.string(from: self as NSNumber)
     }
@@ -61,6 +64,7 @@ extension Float {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumSignificantDigits = 2
+        formatter.maximumFractionDigits = 2
         formatter.groupingSeparator = ","
         return formatter.string(from: self as NSNumber)
     }

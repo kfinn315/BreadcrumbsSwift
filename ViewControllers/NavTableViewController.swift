@@ -13,31 +13,25 @@ import RxCocoa
 import RxSwift
 import RxCoreData
 import RxDataSources
+import SwiftyBeaver
 
 class NavTableViewController: UITableViewController {
     @IBOutlet weak var addBarButton: UIBarButtonItem!
-    var pathsManager = PathsManager()
     
-    static var managedObjectContext: NSManagedObjectContext!
-    var persistentContainer: NSPersistentContainer!
     let disposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         tableView.dataSource = nil
-        
-        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-            NavTableViewController.managedObjectContext = appDelegate.managedObjectContext
-            persistentContainer = appDelegate.persistentContainer
-        }
-        
+
         configureTableView()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        log.info("NavTable will appear")
        // self.navigationController?.hideTransparentNavigationBar()
         
         if #available(iOS 11.0, *) {
@@ -46,6 +40,11 @@ class NavTableViewController: UITableViewController {
             // Fallback on earlier versions
         }
         
+        if(CrumbsManager.shared.hasNewPath) {
+            let editVC = EditPathViewController()
+            self.navigationController?.pushViewController(editVC, animated: true)
+            CrumbsManager.shared.hasNewPath = false
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -58,7 +57,9 @@ class NavTableViewController: UITableViewController {
         }
     }
     func configureTableView() {
-        let datasource = RxTableViewSectionedAnimatedDataSource<AnimatableSectionModel<String,Path>>(configureCell: { (_, _, indexPath:IndexPath, item:Path) in
+        log.info("configure nav table")
+   
+        let datasource = RxTableViewSectionedReloadDataSource<AnimatableSectionModel<String,Path>>(configureCell: { (_, _, indexPath:IndexPath, item:Path) in
             let cell = self.tableView.dequeueReusableCell(withIdentifier: "crumbcell", for: indexPath)
             cell.textLabel?.text = item.displayTitle
             cell.detailTextLabel?.text = item.startdate?.timestring
@@ -68,7 +69,29 @@ class NavTableViewController: UITableViewController {
             true
         }
         datasource.titleForHeaderInSection = { ds, index in return ds.sectionModels[index].identity }
-        NavTableViewController.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)]).map(mapPathsToSections).bind(to: tableView.rx.items(dataSource: datasource)).disposed(by: disposeBag)
+
+        AppDelegate.managedObjectContext!.rx.entities(Path.self, sortDescriptors: [NSSortDescriptor(key: "startdate", ascending: false)])
+            .map({ (paths) -> [AnimatableSectionModel<String, Path>] in
+                var dates : [Date : [Path]] = [:]
+                for path in paths {
+                    if let startdate = path.startdate {
+                        let day = Calendar.current.startOfDay(for: startdate)
+                        if dates[day] == nil {
+                            dates[day] = []
+                        }
+                        dates[day]?.append(path)
+                    }
+                }
+                let sorteddates = dates.sorted(by: { (date0, date1) -> Bool in
+                    return date0.key > date1.key
+                })
+                let result = sorteddates.reduce(into: [AnimatableSectionModel<String, Path>](), { (result, record) in
+                    result.append(AnimatableSectionModel(model: record.key.datestring, items: record.value))
+                })
+                
+                return result
+            })
+            .bind(to: tableView.rx.items(dataSource: datasource)).disposed(by: disposeBag)
         
         tableView.rx.itemSelected.map { [unowned self] indexPath -> Path in
             return try self.tableView.rx.model(at: indexPath)
@@ -85,38 +108,17 @@ class NavTableViewController: UITableViewController {
         self.tableView.rx.itemDeleted.map { [unowned self] indexPath -> Path in
             return try self.tableView.rx.model(at: indexPath)
             }.subscribe(onNext: { (path) in
+                log.info("delete \(path.localid ?? "nil")")
                 //add delete confirmation alert
                 do {
-                    try NavTableViewController.managedObjectContext.rx.delete(path)
+                    try AppDelegate.managedObjectContext!.rx.delete(path)
                 } catch {
-                    print(error)
+                    log.error(error.localizedDescription)
                 }
             })
             .disposed(by: disposeBag)
     }
-//    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-//        
-//    }
-    private func mapPathsToSections(_ paths: [Path]) -> [AnimatableSectionModel<String, Path>] { //group paths into sections by date and sort by date descending
-        var dates : [Date : [Path]] = [:]
-        for path in paths {
-            if let startdate = path.startdate {
-                let day = Calendar.current.startOfDay(for: startdate)
-                if dates[day] == nil {
-                    dates[day] = []
-                }
-                dates[day]?.append(path)
-            }
-        }
-        let sorteddates = dates.sorted(by: { (date0, date1) -> Bool in
-            return date0.key > date1.key
-        })
-        let result = sorteddates.reduce(into: [AnimatableSectionModel<String, Path>](), { (result, record) in
-            result.append(AnimatableSectionModel(model: record.key.datestring, items: record.value))
-        })
-        
-        return result
-    }
+
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         

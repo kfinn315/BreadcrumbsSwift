@@ -15,8 +15,10 @@ import Photos
 public class PathDetailViewController : UIViewController {
     private weak var crumbsManager = CrumbsManager.shared
     var disposeBag = DisposeBag()
-    weak var btnEditTop: UIBarButtonItem!
     
+    @IBOutlet weak var stackvwDuration: UIStackView!
+    @IBOutlet weak var stackvwSteps: UIStackView!
+    @IBOutlet weak var stackvwDist: UIStackView!
     @IBOutlet weak var ivTop: UIImageView!
     @IBOutlet weak var lblTitle: UILabel!
     @IBOutlet weak var lblDate: UILabel!
@@ -58,9 +60,27 @@ public class PathDetailViewController : UIViewController {
                 self?.lblTitle.text = path?.displayTitle
                 self?.lblDate.text = "\(path?.dateSpan ?? path?.startdate?.datestring ?? "?")"
                 self?.tvNotes.text = "\(path?.notes ?? "")"
-                self?.lblSteps.text = path?.stepcount?.formatted ?? "?"
-                self?.lblDistance.text = path?.distance?.formatted ?? "?"
-                self?.lblDuration.text = path?.duration?.formatted ?? "?"
+                
+                if path?.stepcount == nil {
+                    self?.stackvwSteps.isHidden = true
+                } else {
+                    self?.stackvwSteps.isHidden = false
+                    self?.lblSteps.text = path?.stepcount!.formatted
+                }
+                
+                if path?.distance == nil {
+                    self?.stackvwDist.isHidden = true
+                } else{
+                    self?.stackvwDist.isHidden = false
+                    self?.lblDistance.text = path?.displayDistance
+                }
+                
+                if path?.duration == nil {
+                    self?.stackvwDuration.isHidden = true
+                } else{
+                    self?.stackvwDuration.isHidden = false
+                    self?.lblDuration.text = path?.displayDuration
+                }
             }
         }).disposed(by: disposeBag)
         

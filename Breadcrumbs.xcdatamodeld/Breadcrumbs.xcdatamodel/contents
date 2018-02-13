@@ -6,7 +6,7 @@
         <attribute name="distance" optional="YES" attributeType="Double" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="duration" optional="YES" attributeType="Double" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="enddate" optional="YES" attributeType="Date" usesScalarValueType="NO" syncable="YES"/>
-        <attribute name="id" attributeType="String" syncable="YES"/>
+        <attribute name="localid" attributeType="String" syncable="YES"/>
         <attribute name="locations" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="notes" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="pointsJSON" optional="YES" attributeType="String" syncable="YES"/>

@@ -17,7 +17,7 @@ import RxCoreData
 import Photos
 
 class CrumbsManager {
-    private var managedObjectContext : NSManagedObjectContext
+    private weak var managedObjectContext : NSManagedObjectContext?
     
     public var currentPathAlbum : Variable<[PHAsset]?> = Variable(nil)
     public var currentPathDriver : Driver<Path?>?
@@ -25,10 +25,12 @@ class CrumbsManager {
     private var _currentPath : Variable<Path?> = Variable(nil)
     private let currentPathUpdateObservable = PublishSubject<Path?>()
     
-    var pathsManager = PathsManager()
+    //var pathsManager = PathsManager()
     var pointsManager = PointsManager()
     var pedometer = CMPedometer()
     var disposeBag = DisposeBag()
+    
+    public var hasNewPath : Bool = false
     
     private static var _shared : CrumbsManager?
     
@@ -49,7 +51,6 @@ class CrumbsManager {
         
         self.managedObjectContext = appDelegate.managedObjectContext
         
-        
         currentPathDriver = _currentPath.asObservable().asDriver(onErrorJustReturn: nil)
         
         currentPathDriver?.drive(onNext: { [weak self] path in
@@ -59,21 +60,6 @@ class CrumbsManager {
         }).disposed(by: disposeBag)
     }
     
-    func setCoverImage(_ img: UIImage) {
-        log.info("Set cover image")
-        
-        if _currentPath.value != nil, let imgdata = UIImagePNGRepresentation(img) {
-            
-            do {
-                _currentPath.value?.coverimg = imgdata
-                try self.updateCurrentPathInCoreData()
-            } catch {
-                log.error(error.localizedDescription)
-            }
-        } else{
-            
-        }
-    }
     
     func updateCurrentAlbum(collection: PhotoCollection) {
         log.info("Update photo collection to \(collection.title)")
@@ -102,6 +88,7 @@ class CrumbsManager {
     }
     
     public func setCurrentPath(_ path: Path?) {
+        hasNewPath = false
         log.info("set current path to \(path?.displayTitle ?? "nil")")
         _currentPath.value = path
     }
@@ -128,18 +115,13 @@ class CrumbsManager {
             }
         })
         
-        let path = Path(context: managedObjectContext)
+        let path = Path(context: managedObjectContext!)
         
         path.startdate = start
         path.enddate = end
         path.title = title
         path.notes = notes
         path.stepcount = stepcount
-        path.id = path.identity
-        
-//        pathsManager.save(path: path, callback: callback)
-        //            pathsManager.save(date: (start, end), title: title, notes: notes, steps: stepcount, callback: callback)
-        
         
         let pointsData = getPointsData()
         
@@ -170,7 +152,7 @@ class CrumbsManager {
                 do{
                     log.debug("reverse geocode returned \(locality)")
                     path.locations = locality
-                    try self?.managedObjectContext.rx.update(path)
+                    try self?.managedObjectContext!.rx.update(path)
                 } catch{
                     //update failed
                     log.error(error.localizedDescription)
@@ -178,8 +160,25 @@ class CrumbsManager {
             })
         }
         
+        //get map snapshot
+        MapViewController().getSnapshot { snapshot, error in
+            log.debug("getting map snapshot")
+            guard error == nil else {
+                log.error(error!.localizedDescription)
+                return
+            }
+            
+            if let coverImg = snapshot?.image {
+                log.info("Set cover image")
+                path.coverimg = UIImagePNGRepresentation(coverImg)
+            }
+        }
+        
         do{
-            try self.managedObjectContext.rx.update(path)
+            try self.managedObjectContext!.rx.update(path)
+            
+            setCurrentPath(path)
+            hasNewPath = true
             callback(path, nil)
         } catch {
             log.error(error.localizedDescription)
@@ -192,12 +191,12 @@ class CrumbsManager {
         let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
         var pointsJSON : String?
         
-//        guard managedObjectContext != nil else {
-//            return
-//        }
+        //        guard managedObjectContext != nil else {
+        //            return
+        //        }
         
         do {
-            points = try managedObjectContext.fetch(fetchRequest)
+            points = try managedObjectContext!.fetch(fetchRequest)
         } catch {
             log.error("error \(error)")
         }
@@ -236,7 +235,7 @@ class CrumbsManager {
             }
         } else {
             // Fallback on earlier versions
-        }        
+        }
         
         guard CMPedometer.isStepCountingAvailable() else {
             log.debug("step counting is not available")
@@ -269,7 +268,7 @@ class CrumbsManager {
             log.debug("currentpath.value is nil")
             return
         }
-        try managedObjectContext.rx.update(currentpath)
+        try managedObjectContext!.rx.update(currentpath)
     }
 }
 

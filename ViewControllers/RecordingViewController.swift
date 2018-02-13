@@ -26,8 +26,17 @@ public class RecordingViewController : BaseRecordingController {
     @IBOutlet weak var btnStop: UIButton!
     @IBOutlet weak var lblTime: UILabel!
     
-    private var timePast = 0
+    private var timePast : TimeInterval = 0.0
     private var timer : Timer?
+    let timeFormatter : DateComponentsFormatter
+    
+    required public init?(coder aDecoder: NSCoder) {
+        timeFormatter = DateComponentsFormatter()
+        timeFormatter.allowedUnits = [.hour, .minute, .second]
+        timeFormatter.unitsStyle = .abbreviated
+        
+        super.init(coder: aDecoder)
+    }
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,11 +47,11 @@ public class RecordingViewController : BaseRecordingController {
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        self.lblTime.text = "\(self.timePast) seconds"
+        updateView()
         
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: {(_) in
-            self.timePast += 1
-            self.lblTime.text = "\(self.timePast) seconds"
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: { [weak self] (_) in
+            self?.timePast += 1
+            self?.updateView()
         })
     }
     
@@ -58,55 +67,21 @@ public class RecordingViewController : BaseRecordingController {
         self.present(saveAlert, animated: true, completion: nil)
     }
     
+    private func updateView(){
+        lblTime.text = timeFormatter.string(from: self.timePast)
+    }
+    
     func buttonSaveClicked() {
         recordingMgr.save { [weak self] path, error in
             log.debug("saving path")
             if error == nil, path != nil {
-                self?.crumbsManager.setCurrentPath(path)
-
-                //get map snapshot
-                MapViewController().getSnapshot { snapshot, error in
-                    log.debug("getting map snapshot")
-                    guard error == nil else {
-                        log.error(error!.localizedDescription)
-                        return
-                    }
-                    
-                    if snapshot != nil {
-                        self?.crumbsManager.setCoverImage(snapshot!.image)
-                    }
-                   
-                    self?.navigateToEditView()
-                }
+                self?.navigationController?.popToRootViewController(animated: true)                
             } else {
                 log.error(error?.localizedDescription ?? "no error message")
             }
         }
     }
     
-    func navigateToEditView(){
-        log.debug("navigate to edit view")
-        var firstVC = self.navigationController?.viewControllers.first
-        if firstVC == nil {
-            firstVC = self.storyboard?.instantiateViewController(withIdentifier: "table view")
-        }
-        let editVC = EditPathViewController()
-        editVC.isNewPath = true
-        
-        let newVC_list : [UIViewController] = [firstVC!, editVC]
-        
-        DispatchQueue.main.async {
-            self.navigationController?.setViewControllers(newVC_list, animated: true)
-        }
-    }
-    
-//    - (void)image:(UIImage *)image
-//    didFinishSavingWithError:(NSError *)error
-//    contextInfo:(void *)contextInfo;
-//
-//    @objc func onSnapshotSaved(image: UIImage, error: Error?, contextInfo: UnsafeMutableRawPointer?){
-//        image.imageAsset
-//    }
     func buttonResetClicked() {
         //go to new path vc
         self.navigationController?.popViewController(animated: true)
