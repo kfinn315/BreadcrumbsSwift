@@ -15,10 +15,23 @@ import RxCocoa
 import RxSwift
 
 public class BaseRecordingController : UIViewController,CLLocationManagerDelegate {
-    var recordingMgr = RecordingManager.shared
-    
+    weak var crumbsManager = CrumbsManager.shared
+    var locationManager = CoreLocationManager()
+    var disposeBag = DisposeBag()
+    var startTime : Date?
+    var stopTime : Date?
+    var isRecording : Bool = false
+
     public override func viewDidLoad() {
         super.viewDidLoad()
+        
+        locationManager.location
+            .drive(onNext: { [unowned self] (cllocation : CLLocation) in
+                //this is called when there's a new location
+                log.debug("location manager didUpdateLocations")
+                
+                self.crumbsManager?.addPointToData(LocalPoint.from(cllocation))
+            }).disposed(by: disposeBag)
     }
     
     public override func viewWillAppear(_ animated: Bool) {
@@ -48,4 +61,32 @@ public class BaseRecordingController : UIViewController,CLLocationManagerDelegat
             self.navigationController?.popViewController(animated: true)
         }
     }
+    
+    func startUpdating(accuracy: LocationAccuracy) {
+       // let accuracy = LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking
+        
+        crumbsManager!.clearPoints()
+        
+        locationManager.startLocationUpdates(with: accuracy)
+        
+        startTime = Date()
+        stopTime = nil
+    }
+    
+    public func stopUpdating() {
+        stopTime = Date()
+        locationManager.stopLocationUpdates()
+    }
+    
+    public func save(callback: @escaping (Path?,Error?) -> Void) {
+        crumbsManager?.saveNewPath(start: startTime ?? Date(), end: stopTime ?? Date(), title: "", notes: "", callback: callback)
+    }
+    
+    public func reset() {
+        crumbsManager?.clearPoints()
+    }
+//    
+//    public var isRecording : Bool {
+//        return locationManager.isUpdating
+//    }
 }

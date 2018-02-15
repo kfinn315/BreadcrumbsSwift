@@ -124,11 +124,13 @@ class EditPathViewController : FormViewController {
                 }
             }
         }
+        
         do {
             try crumbsManager?.updateCurrentPathInCoreData()
         } catch {
             log.error(error.localizedDescription)
         }
+        
         self.navigationController?.popViewController(animated: true)
     }
 }

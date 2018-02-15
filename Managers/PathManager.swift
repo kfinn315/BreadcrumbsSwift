@@ -62,12 +62,12 @@ class CrumbsManager {
                 self?.updatePhotoCollection(path?.albumId)
             }
         }).disposed(by: disposeBag)
-
+        
         //push emit path to currentPathDriver when _currentPath emits
         _currentPath.asObservable().subscribe(onNext: { (path) in
             self.currentPathSubject.onNext(path)
         }).disposed(by: disposeBag)
-
+        
     }
     
     
@@ -90,11 +90,7 @@ class CrumbsManager {
     private func updatePhotoCollection(_ pathid: String?) {
         log.info("update photo collection to \(pathid ?? "nil")")
         
-        if pathid != nil {
-            (currentAlbumTitle, currentAlbumAssets.value) = PhotoManager.getImages(pathid!) ?? (nil,nil)
-        } else {
-            currentAlbumAssets.value = nil
-        }
+        currentAlbumAssets.value = PhotoManager.getImages(pathid)        
     }
     
     public func setCurrentPath(_ path: Path?) {
@@ -108,104 +104,123 @@ class CrumbsManager {
     func saveNewPath(start: Date, end: Date, title: String, notes: String?, callback: @escaping (Path?,Error?) -> Void) {
         log.info("saveNewPath")
         
-        var stepcount : NSNumber?
-        
-        getSteps(start, end, callback: { (data, error) -> Void in
-            log.debug("get steps callback")
+        DispatchQueue.global(qos: .userInitiated).async {
+            let group = DispatchGroup()
             
-            guard error != nil else {
-                log.error("\(error!.localizedDescription)")
-                return
+            let path = Path(context: self.managedObjectContext!)
+            path.startdate = start
+            path.enddate = end
+            path.title = title
+            path.notes = notes
+            
+            let pointsData = self.getPointsData()
+            path.pointsJSON = pointsData.json
+
+            group.enter()
+            self.getSteps(start, end) { steps in
+                path.stepcount = steps
+                group.leave()
             }
             
-            if let stepdata = data {
-                log.verbose("steps: \(stepdata.numberOfSteps)")
-                log.verbose("est distance: \(stepdata.distance ?? 0)")
-                stepcount = stepdata.numberOfSteps//Int64(truncating: stepdata.numberOfSteps)
-            } else {
-                log.error("step data was nil")
+            group.enter()
+            self.getPathDistance(pointsData.array) { distance in
+                path.distance = distance as NSNumber
+                group.leave()
             }
-        })
-        
-        let path = Path(context: managedObjectContext!)
-        
-        path.startdate = start
-        path.enddate = end
-        path.title = title
-        path.notes = notes
-        path.stepcount = stepcount
-        
-        let pointsData = getPointsData()
-        
-        path.pointsJSON = pointsData.json
-        path.distance = pointsData.distance as NSNumber
-        
-        //time duration
-        if path.startdate == nil, path.enddate != nil {
-            path.startdate = path.enddate
-        } else if path.enddate == nil, path.startdate != nil {
-            path.enddate = path.startdate
-        } else if path.startdate == nil, path.enddate == nil {
-            path.startdate = Date()
-            path.enddate = path.startdate //now
-        }
-        path.duration = DateInterval(start: path.startdate!, end: path.enddate!).duration as NSNumber
-        
-        //get location names
-        let points = pointsData.array
-        if let point1 = points.first {
-            CLGeocoder().reverseGeocodeLocation(CLLocation(point1.coordinates), completionHandler: { [weak self] (placemarks, error) in
-                
-                guard let locality = placemarks?[0].locality else {
-                    log.debug("reverse geocode lookup returned no locality")
-                    return
+
+            group.enter()
+            self.getPathDuration(start, end) { duration in
+                path.duration = duration
+                group.leave()
+            }
+            
+            group.enter()
+            self.getLocality(pointsData.array){ locality in
+                path.locations = locality
+                group.leave()
+            }
+            
+            group.enter()
+            self.getSnapshot() { coverimage in
+                if let coverImg = coverimage {
+                    log.info("Set cover image")
+                    path.coverimg = UIImagePNGRepresentation(coverImg)
                 }
                 
-                do{
-                    log.debug("reverse geocode returned \(locality)")
-                    path.locations = locality
-                    try self?.managedObjectContext!.rx.update(path)
-                } catch{
-                    //update failed
-                    log.error(error.localizedDescription)
-                }
-            })
+                group.leave()
+            }
+            
+            group.wait()
+
+            do{
+                try self.managedObjectContext!.rx.update(path)
+                self.setCurrentPath(path)
+                self.hasNewPath = true
+                
+                callback(path, nil)
+            } catch {
+                log.error(error.localizedDescription)
+                callback(nil, error)
+            }
         }
-        
-        //get map snapshot
+    }
+    private func getSnapshot(_ callback: @escaping (UIImage?) -> Void){
         MapViewController().getSnapshot { snapshot, error in
             log.debug("getting map snapshot")
             guard error == nil else {
                 log.error(error!.localizedDescription)
+                callback(nil)
                 return
             }
             
-            if let coverImg = snapshot?.image {
-                log.info("Set cover image")
-                path.coverimg = UIImagePNGRepresentation(coverImg)
-            }
-        }
-        
-        do{
-            try self.managedObjectContext!.rx.update(path)
-            setCurrentPath(path)
-            hasNewPath = true
-            
-            callback(path, nil)
-        } catch {
-            log.error(error.localizedDescription)
-            callback(nil, error)
+            callback(snapshot?.image)
         }
     }
+    private func getLocality(_ points: [Point],_ callback: @escaping (String?) -> Void ) {
+        //get location names
+        if let point1 = points.first {
+            CLGeocoder().reverseGeocodeLocation(CLLocation(point1.coordinates), completionHandler: { (placemarks, error) in
+                guard let locality = placemarks?[0].locality else {
+                    log.debug("reverse geocode lookup returned no locality")
+                    callback(nil)
+                    return
+                }
+                
+                callback(locality)
+            })
+        }
+    }
+    private func getPathDuration(_ start: Date, _ end: Date,_ callback: @escaping (NSNumber) -> Void) {
+//        //time duration
+//        if start == nil, end != nil {
+//            start = end
+//        } else if path.enddate == nil, start != nil {
+//            end = start
+//        } else if start == nil, end == nil {
+//            start = Date()
+//            end = start //now
+//        }
+//
+        
+        callback(DateInterval(start: start, end: end).duration as NSNumber)
+    }
+    private func getPathDistance(_ points: [Point],_ callback: @escaping (CLLocationDistance) -> Void){
+        var pointDistance : (endPoint: CLLocation?, distance: CLLocationDistance) = (nil, 0.0)
+        pointDistance = points.reduce(into: pointDistance, { (pointDistance, point) in
+            if(pointDistance.endPoint == nil){ //first
+                pointDistance.endPoint = CLLocation(point.coordinates)
+            } else{
+                pointDistance.distance += pointDistance.endPoint!.distance(from: CLLocation(point.coordinates))
+                log.verbose("distance \(pointDistance.distance)")
+            }
+        })
+        callback(pointDistance.distance)
+    }
     
-    private func getPointsData() -> (array: [Point], json: String?, distance: Double){
+    private func getPointsData() -> (array: [Point], json: String?){
         var points : [Point] = []
         let fetchRequest : NSFetchRequest<Point> = Point.fetchRequest()
         var pointsJSON : String?
-        
-        //        guard managedObjectContext != nil else {
-        //            return
-        //        }
         
         do {
             points = try managedObjectContext!.fetch(fetchRequest)
@@ -220,46 +235,47 @@ class CrumbsManager {
             log.error("error "+error.localizedDescription)
         }
         
-        var pointDistance : (endPoint: CLLocation?, distance: CLLocationDistance) = (nil, 0.0)
-        pointDistance = points.reduce(into: pointDistance, { (pointDistance, point) in
-            if(pointDistance.endPoint == nil){ //first
-                pointDistance.endPoint = CLLocation(point.coordinates)
-            } else{
-                pointDistance.distance += pointDistance.endPoint!.distance(from: CLLocation(point.coordinates))
-                log.verbose("distance \(pointDistance.distance)")
-            }
-        })
-        
-        return (points, pointsJSON, pointDistance.distance)
+        return (points, pointsJSON)
     }
     
-    private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {
+    private func getSteps(_ start: Date, _ end: Date, _ callback: @escaping (NSNumber?) -> Void){
         log.debug("get steps for range \(start.string) - \(end.string)")
         
         if #available(iOS 11.0, *) {
             let authStatus = CMMotionActivityManager.authorizationStatus()
             
-            guard authStatus != CMAuthorizationStatus.authorized else {
-                log.error("Core motion is not authorized")
-                return
+            if authStatus == CMAuthorizationStatus.authorized, CMPedometer.isStepCountingAvailable() {
+                pedometer.queryPedometerData(from: start, to: end) {(data, error) -> Void in
+                    var stepcount : NSNumber?
+                    log.debug("get steps callback")
+                    
+                    if error == nil, let stepdata = data {
+                        log.verbose("steps: \(stepdata.numberOfSteps)")
+                        log.verbose("est distance: \(stepdata.distance ?? 0)")
+                        stepcount = stepdata.numberOfSteps//Int64(truncating: stepdata.numberOfSteps)
+                    } else {
+                        log.error("error: \(error?.localizedDescription) or step data was nil")
+                    }
+                    
+                    callback(stepcount)
+                }
+            } else {
+                log.error("Core motion is not authorized or step counting is not available")
+                callback(nil)
             }
         } else {
             // Fallback on earlier versions
             log.debug("core motion skipped due to iOS version")
+            callback(nil)
         }
-        
-        guard CMPedometer.isStepCountingAvailable() else {
-            log.debug("step counting is not available")
-            
-            callback(nil, LocalError.failed(message: "step counting is not available"))
-            return
-        }
-        
-        pedometer.queryPedometerData(from: start, to: end, withHandler: callback)
         
         return
     }
-    
+    //    private func getSteps(_ start: Date, _ end: Date, callback: @escaping CMPedometerHandler) {
+    //
+    //        return
+    //    }
+    //
     func addPointToData(_ point: LocalPoint) {
         log.info("append point")
         pointsManager.savePoint(point)

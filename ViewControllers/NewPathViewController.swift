@@ -14,7 +14,7 @@ import CloudKit
 import RxCocoa
 import RxSwift
 
-public class NewPathViewController : BaseRecordingController {
+public class NewPathViewController : UIViewController {
     @IBOutlet weak var lblInstructions: UILabel!
     @IBOutlet weak var btnStart: UIButton!
     @IBOutlet weak var segAction: UISegmentedControl!
@@ -29,14 +29,14 @@ public class NewPathViewController : BaseRecordingController {
         CLLocationManager().rx.didChangeAuthorizationStatus.subscribe(onNext: { authstatus in self.onAuthStatusChanged(authstatus)
         }).disposed(by: disposeBag)
         
-        if recordingMgr.isRecording {
-            //show recording vc
-            if let vc = storyboard?.instantiateViewController(withIdentifier: "recording") {
-                self.navigationController?.pushViewController(vc, animated: false)
-            }
-        } else {
-            btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )         
-        }
+//        if isRecording {
+//            //show recording vc
+//            if let vc = storyboard?.instantiateViewController(withIdentifier: "recording") {
+//                self.navigationController?.pushViewController(vc, animated: false)
+//            }
+//        } else {
+            btnStart.addTarget(self, action: #selector(startUpdating), for: .touchUpInside )
+//        }
     }
     func onAuthStatusChanged(_ authstatus: CLAuthorizationStatus) {
         if authstatus != CLAuthorizationStatus.authorizedAlways, authstatus != CLAuthorizationStatus.authorizedWhenInUse {
@@ -48,8 +48,11 @@ public class NewPathViewController : BaseRecordingController {
             self.btnStart.isEnabled = true
         }
     }
-    @objc
-    func startUpdating() {
-        recordingMgr.startUpdating(with: LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking)
+    @objc func startUpdating(){
+        if let vc = storyboard?.instantiateViewController(withIdentifier: "recording") as? RecordingViewController {
+            let accuracy = LocationAccuracy(rawValue: segAction.selectedSegmentIndex) ?? LocationAccuracy.walking
+            vc.recordingAccuracy = accuracy
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
     }
 }
