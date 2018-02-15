@@ -13,7 +13,19 @@ import RxCocoa
 
 public class PhotoCollection {
     var opts = PHFetchOptions()
-
+    weak var imageManager = PHImageManager.default()
+    private var _collection : PHAssetCollection
+    
+    var collection : PHAssetCollection {
+        return _collection
+    }
+    var thumbnail : UIImage?
+    var title : String {
+        return collection.localizedTitle ?? ""
+    }
+    var localid : String {
+        return collection.localIdentifier
+    }
     init(_ collection: PHAssetCollection) {
         self._collection = collection
         
@@ -26,7 +38,7 @@ public class PhotoCollection {
 
             //get first image to use as collection thumbnail
             if let thumbnailAsset = assets.firstObject {
-                PHImageManager.default().requestImageThumbnail(for: thumbnailAsset, resultHandler: { [weak self] (img, _) in
+                self.imageManager?.requestImageThumbnail(for: thumbnailAsset, resultHandler: { [weak self] (img, _) in
                     self?.thumbnail = img
                 })
             } else {
@@ -34,36 +46,26 @@ public class PhotoCollection {
             }
         }
     }
-    private var _collection : PHAssetCollection
-    var collection : PHAssetCollection {
-        return _collection
-    }
-    var thumbnail : UIImage?
-    var title : String {
-        return collection.localizedTitle ?? ""
-    }
-    var localid : String {
-        return collection.localIdentifier
-    }
+   
 }
 
 class PhotoManager {
     static func getPhotoCollection(from localId : String) -> PhotoCollection? {
-        if let coll = getAssetCollection(from: localId) {
+        if let coll = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [localId], options: nil).firstObject {
             return PhotoCollection(coll)
         }
         
         return nil
     }
-    static func getAssetCollection(from localId : String) -> PHAssetCollection? {
-        let result = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [localId], options: nil)
-        return result.firstObject
-    }
-    static func getImages(_ localid: String) -> (String?,[PHAsset]?)? {
+//    static func getAssetCollection(from localId : String) -> PHAssetCollection? {
+//        let result = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [localId], options: nil)
+//        return result.firstObject
+//    }
+    static func getImages(_ localid: String) -> (String?,PHAssetCollection?)? {
         let photoalbum = getPhotoCollection(from: localid)
         
         if let album = photoalbum {
-            return (album.title, getImages(album.collection))
+            return (album.title, album.collection)
         }
         return nil
     }
@@ -108,13 +110,7 @@ class PhotoManager {
             return date0.collection.endDate ?? Date() <= date1.collection.endDate ?? Date()
         })
         return data
-    }
-    
-    //returns localized id of assetcollection
-    static func createTimespanAlbum(name: String, start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?) -> Void) {
-        let album = PhotoAlbum(albumname: name)
-        album.addPhotosInTimespan(start: start, end: end, completionHandler: completionHandler)
-    }
+    }    
 }
 
 extension PHImageManager {

@@ -19,13 +19,13 @@ import Photos
 class CrumbsManager {
     private weak var managedObjectContext : NSManagedObjectContext?
     
-    public var currentPathAlbum : Variable<[PHAsset]?> = Variable(nil)
     public var currentPathDriver : Driver<Path?>?
+    public var currentAlbumDriver : Driver<PHAssetCollection?>
     public var currentAlbumTitle : String?
+    private var currentAlbumAssets : Variable<PHAssetCollection?> = Variable(nil)
     private var _currentPath : Variable<Path?> = Variable(nil)
-    private let currentPathUpdateObservable = PublishSubject<Path?>()
+    private let currentPathSubject = BehaviorSubject<Path?>(value: nil)
     
-    //var pathsManager = PathsManager()
     var pointsManager = PointsManager()
     var pedometer = CMPedometer()
     var disposeBag = DisposeBag()
@@ -51,18 +51,28 @@ class CrumbsManager {
         
         self.managedObjectContext = appDelegate.managedObjectContext
         
-        currentPathDriver = _currentPath.asObservable().asDriver(onErrorJustReturn: nil)
+        //emit updates to _currentPath value
+        currentPathDriver = currentPathSubject.asDriver(onErrorJustReturn: nil)
+        
+        currentAlbumDriver = currentAlbumAssets.asObservable().asDriver(onErrorJustReturn: nil)
         
         currentPathDriver?.drive(onNext: { [weak self] path in
-            log.info("currentPathDriver onNext")
-            
-            self?.updatePhotoCollection(path?.albumId)
+            DispatchQueue.global(qos: .userInitiated).async {
+                log.info("currentPathDriver onNext")
+                self?.updatePhotoCollection(path?.albumId)
+            }
         }).disposed(by: disposeBag)
+
+        //push emit path to currentPathDriver when _currentPath emits
+        _currentPath.asObservable().subscribe(onNext: { (path) in
+            self.currentPathSubject.onNext(path)
+        }).disposed(by: disposeBag)
+
     }
     
     
     func updateCurrentAlbum(collection: PhotoCollection) {
-        log.info("Update photo collection to \(collection.title)")
+        log.info("Update photo album to \(collection.title)")
         
         guard _currentPath.value != nil else {
             return
@@ -81,16 +91,18 @@ class CrumbsManager {
         log.info("update photo collection to \(pathid ?? "nil")")
         
         if pathid != nil {
-            (currentAlbumTitle, currentPathAlbum.value) = PhotoManager.getImages(pathid!) ?? (nil,nil)
+            (currentAlbumTitle, currentAlbumAssets.value) = PhotoManager.getImages(pathid!) ?? (nil,nil)
         } else {
-            currentPathAlbum.value = nil
+            currentAlbumAssets.value = nil
         }
     }
     
     public func setCurrentPath(_ path: Path?) {
-        hasNewPath = false
         log.info("set current path to \(path?.displayTitle ?? "nil")")
-        _currentPath.value = path
+        hasNewPath = false
+        if( _currentPath.value?.identity != path?.identity){
+            _currentPath.value = path
+        }
     }
     
     func saveNewPath(start: Date, end: Date, title: String, notes: String?, callback: @escaping (Path?,Error?) -> Void) {
@@ -176,9 +188,9 @@ class CrumbsManager {
         
         do{
             try self.managedObjectContext!.rx.update(path)
-            
             setCurrentPath(path)
             hasNewPath = true
+            
             callback(path, nil)
         } catch {
             log.error(error.localizedDescription)
@@ -218,8 +230,6 @@ class CrumbsManager {
             }
         })
         
-        // path.distance = pointDistance.distTo
-        
         return (points, pointsJSON, pointDistance.distance)
     }
     
@@ -235,6 +245,7 @@ class CrumbsManager {
             }
         } else {
             // Fallback on earlier versions
+            log.debug("core motion skipped due to iOS version")
         }
         
         guard CMPedometer.isStepCountingAvailable() else {
@@ -250,25 +261,27 @@ class CrumbsManager {
     }
     
     func addPointToData(_ point: LocalPoint) {
-        log.debug("append point")
-        
+        log.info("append point")
         pointsManager.savePoint(point)
     }
     
     func clearPoints() {
-        log.debug("clear points")
-        
+        log.info("clear points")
         pointsManager.clearPoints()
     }
     
     public func updateCurrentPathInCoreData() throws {
-        log.debug("update current path in core data")
+        log.info("call to update current path")
         
         guard let currentpath = _currentPath.value else {
-            log.debug("currentpath.value is nil")
+            log.error("currentpath value is nil")
             return
         }
+        
+        log.debug("update current path in managedObjectContext")
         try managedObjectContext!.rx.update(currentpath)
+        
+        currentPathSubject.onNext(currentpath)
     }
 }
 

@@ -9,11 +9,11 @@
 import UIKit
 
 class PageViewController : UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
-    
     var pageControl : UIPageControl
+    @IBOutlet weak var btnEdit: UIBarButtonItem!
     
-    private(set) lazy var orderedViewControllers: [UIViewController] = {
-        if let storyboard = self.storyboard {
+    private(set) lazy var orderedViewControllers: [UIViewController] = { [weak self] in
+        if let storyboard = self?.storyboard {
             return [storyboard.instantiateViewController(withIdentifier: "Detail"),
                     storyboard.instantiateViewController(withIdentifier: "MapVC"),
                     storyboard.instantiateViewController(withIdentifier: "Photos Table")]
@@ -22,7 +22,6 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         return []
     }()
     
-    @IBOutlet weak var btnEdit: UIBarButtonItem!
     required init?(coder: NSCoder) {
         pageControl = UIPageControl()
         
@@ -34,9 +33,9 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
         
         self.dataSource = self
         self.delegate = self
-        self.orderedViewControllers[0].view.tag = 0
-        self.orderedViewControllers[1].view.tag = 1
-        self.orderedViewControllers[2].view.tag = 2
+//        self.orderedViewControllers[0].view.tag = 0
+//        self.orderedViewControllers[1].view.tag = 1
+//        self.orderedViewControllers[2].view.tag = 2
         
         if let firstController = orderedViewControllers.first {
             self.setViewControllers([firstController], direction: .forward, animated: true, completion: nil)
@@ -70,6 +69,11 @@ class PageViewController : UIPageViewController, UIPageViewControllerDataSource,
             }
         }
     }
+    
+    public func resetNavigationItem() {
+        self.navigationItem.setRightBarButton(UIBarButtonItem.init(barButtonSystemItem: .edit, target: self, action: #selector(editPath)), animated: true)
+    }
+    
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
         let nextindex = viewController.view.tag - 1
         

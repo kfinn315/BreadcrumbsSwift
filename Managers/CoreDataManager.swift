@@ -12,7 +12,7 @@ import CoreLocation
 import UIKit
 
 class CoreDataManager {
-    var context : NSManagedObjectContext!
+    weak var context : NSManagedObjectContext?
     
     init() {
         if let appDelegate = UIApplication.shared.delegate as? AppDelegate {

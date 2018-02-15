@@ -12,7 +12,7 @@ import RxCocoa
 import RxSwift
 
 class EditPathViewController : FormViewController {
-    var crumbsManager : CrumbsManager?
+    weak var crumbsManager : CrumbsManager? = CrumbsManager.shared
     var dateformatter : DateFormatter?
     var disposeBag = DisposeBag()
     
@@ -27,9 +27,7 @@ class EditPathViewController : FormViewController {
         dateformatter?.dateStyle = .short
         dateformatter?.timeStyle = .short
         
-        crumbsManager = CrumbsManager.shared
-        //crumbsManager?.delegate = self
-        crumbsManager?.currentPathDriver?.drive(onNext: { [weak self] path in            
+        crumbsManager?.currentPathDriver?.drive(onNext: { [weak self] path in
             self?.path = path
             self?.updateData()
         }).disposed(by: disposeBag)
@@ -98,8 +96,6 @@ class EditPathViewController : FormViewController {
     }
     
     @objc func save() {
-        weak var path = crumbsManager?.currentPath
-        
         guard path != nil else {
             return
         }
@@ -129,14 +125,10 @@ class EditPathViewController : FormViewController {
             }
         }
         do {
-            try CrumbsManager.shared.updateCurrentPathInCoreData()
+            try crumbsManager?.updateCurrentPathInCoreData()
         } catch {
             log.error(error.localizedDescription)
         }
-        crumbsUpdated()
-    }
-    
-    func crumbsUpdated() {
         self.navigationController?.popViewController(animated: true)
     }
 }

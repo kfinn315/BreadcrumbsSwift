@@ -11,7 +11,7 @@ import UIKit
 import Photos
 
 public class RecordingViewController : BaseRecordingController {
-    let crumbsManager = CrumbsManager.shared
+    private weak var crumbsManager = CrumbsManager.shared
     
     lazy var saveAlert : UIAlertController = {
         let alert = UIAlertController(title: "Save?", message: "Would you like to save this path or reset?", preferredStyle: UIAlertControllerStyle.alert)
@@ -28,7 +28,7 @@ public class RecordingViewController : BaseRecordingController {
     
     private var timePast : TimeInterval = 0.0
     private var timer : Timer?
-    let timeFormatter : DateComponentsFormatter
+    private let timeFormatter : DateComponentsFormatter
     
     required public init?(coder aDecoder: NSCoder) {
         timeFormatter = DateComponentsFormatter()
@@ -75,7 +75,7 @@ public class RecordingViewController : BaseRecordingController {
         recordingMgr.save { [weak self] path, error in
             log.debug("saving path")
             if error == nil, path != nil {
-                self?.navigationController?.popToRootViewController(animated: true)                
+                self?.navigationController?.popToRootViewController(animated: true)
             } else {
                 log.error(error?.localizedDescription ?? "no error message")
             }

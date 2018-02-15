@@ -70,45 +70,5 @@ class PhotoAlbum: NSObject {
             return collection.firstObject
         }
         return nil
-    }
-    
-    func addPhotosInTimespan(start: Date, end: Date, completionHandler: @escaping (PhotoCollection?, Error?) -> Void) {
-        PHPhotoLibrary.shared().performChanges({
-            guard self.assetCollection != nil else {
-                log.error("error asset collection is nil")
-                return
-            }
-            
-            let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection!)
-            let opts = PHFetchOptions()
-            opts.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@", start as NSDate, end as NSDate)
-            let fetchresult = PHAsset.fetchAssets(with: .image, options: opts)
-            albumChangeRequest?.addAssets(fetchresult)
-        }, completionHandler: { (_, error) in
-            if error !=  nil {
-                log.error("error "+error!.localizedDescription)
-            }
-            
-            var photoCollection : PhotoCollection? = nil
-            if self.assetCollection != nil {
-                photoCollection = PhotoCollection(self.assetCollection!)
-            }
-            completionHandler(photoCollection, error)
-        })
-    }
- 
-//    func save(image: UIImage) {
-//        if assetCollection == nil {
-//            return                          // if there was an error upstream, skip the save
-//        }
-//
-//        PHPhotoLibrary.shared().performChanges({
-//            let assetChangeRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-//            let assetPlaceHolder = assetChangeRequest.placeholderForCreatedAsset
-//            let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection)
-//            let enumeration: NSArray = [assetPlaceHolder!]
-//            albumChangeRequest!.addAssets(enumeration)
-//
-//        }, completionHandler: nil)
-//    }
+    }    
 }

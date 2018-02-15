@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 import RxDataSources
 import RxCoreData
+import CoreLocation
 
 @objc(Path)
 public class Path: NSManagedObject, Persistable, IdentifiableType {
@@ -19,10 +20,11 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
     public static var entityName: String = "Path"
     
     let decoder = JSONDecoder()
-    public func getPoints() -> [Point] {
+    public func getPoints() -> [CLLocationCoordinate2D] {
         do {
             if let json = (pointsJSON ?? "").data(using: .utf8) {
-                return try decoder.decode([Point].self, from: json)
+                let points = try decoder.decode([Point].self, from: json)
+                 return points.map({(point: Point) -> CLLocationCoordinate2D in return point.coordinates})
             }
         } catch {
             log.error(error.localizedDescription)
@@ -112,7 +114,7 @@ public class Path: NSManagedObject, Persistable, IdentifiableType {
         dateFormatter.allowedUnits = [.hour, .minute, .second]
         dateFormatter.unitsStyle = .abbreviated
       
-        let timeinterval = TimeInterval(duration!)
+        let timeinterval = TimeInterval(truncating: duration!)
         return dateFormatter.string(from: timeinterval) ?? "?"
     }
 }

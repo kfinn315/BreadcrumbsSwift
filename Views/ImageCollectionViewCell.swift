@@ -14,4 +14,6 @@ class ImageCollectionViewCell: UICollectionViewCell {
     func configurecell(image: UIImage) {
         imageView.image = image        
     }
+    
+    var representedAssetIdentifier : String?
 }

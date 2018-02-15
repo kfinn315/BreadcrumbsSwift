@@ -14,7 +14,6 @@ import Photos
 
 public class PathDetailViewController : UIViewController {
     private weak var crumbsManager = CrumbsManager.shared
-    var disposeBag = DisposeBag()
     
     @IBOutlet weak var stackvwDuration: UIStackView!
     @IBOutlet weak var stackvwSteps: UIStackView!
@@ -27,67 +26,54 @@ public class PathDetailViewController : UIViewController {
     @IBOutlet weak var lblDistance: UILabel!
     @IBOutlet weak var lblSteps: UILabel!
     
+    private var disposeBag = DisposeBag()
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+                log.debug("pathDetail view did load")
         title = ""
         
         crumbsManager?.currentPathDriver?.drive(onNext: {[weak self] path in
-            guard path != nil else {
-                log.error("error: currentPath is nil")
-                return
-            }
-            
-            if let coverimg = path!.coverimg {
-                self?.ivTop.image = UIImage(data: coverimg)
-                self?.ivTop.setRounded()
-            } else {
-                if let firstasset = self?.crumbsManager?.currentPathAlbum.value?.first {
-                    if let size = self?.ivTop.frame.size {
-                        PHImageManager.default().requestImage(for: firstasset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: nil, resultHandler: {(img, _) in
-                            
-                            DispatchQueue.main.async {
-                                self?.ivTop.image = img
-                                self?.ivTop.setRounded()
-                                self?.ivTop.setNeedsLayout()
-                            }
-                        })
-                    }
-                }
-            }
-            
-            DispatchQueue.main.async {
-                self?.lblTitle.text = path?.displayTitle
-                self?.lblDate.text = "\(path?.dateSpan ?? path?.startdate?.datestring ?? "?")"
-                self?.tvNotes.text = "\(path?.notes ?? "")"
-                
-                if path?.stepcount == nil {
-                    self?.stackvwSteps.isHidden = true
-                } else {
-                    self?.stackvwSteps.isHidden = false
-                    self?.lblSteps.text = path?.stepcount!.formatted
-                }
-                
-                if path?.distance == nil {
-                    self?.stackvwDist.isHidden = true
-                } else{
-                    self?.stackvwDist.isHidden = false
-                    self?.lblDistance.text = path?.displayDistance
-                }
-                
-                if path?.duration == nil {
-                    self?.stackvwDuration.isHidden = true
-                } else{
-                    self?.stackvwDuration.isHidden = false
-                    self?.lblDuration.text = path?.displayDuration
-                }
-            }
+            self?.updateUI(path)
         }).disposed(by: disposeBag)
-        
     }
     
+    func updateUI(_ path: Path?){
+        if let coverimg = path?.coverimg {
+            self.ivTop.image = UIImage(data: coverimg)
+            self.ivTop.setRounded()
+        }
+        
+        self.lblTitle.text = path?.displayTitle
+        self.lblDate.text = "\(path?.dateSpan ?? path?.startdate?.datestring ?? "?")"
+        self.tvNotes.text = "\(path?.notes ?? "")"
+        
+        if path?.stepcount == nil {
+            self.stackvwSteps.isHidden = true
+        } else {
+            self.stackvwSteps.isHidden = false
+            self.lblSteps.text = path?.stepcount!.formatted
+        }
+        
+        if path?.distance == nil {
+            self.stackvwDist.isHidden = true
+        } else{
+            self.stackvwDist.isHidden = false
+            self.lblDistance.text = path?.displayDistance
+        }
+        
+        if path?.duration == nil {
+            self.stackvwDuration.isHidden = true
+        } else{
+            self.stackvwDuration.isHidden = false
+            self.lblDuration.text = path?.displayDuration
+        }
+    }
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        log.debug("pathDetail view will appear")
         
         //self.navigationController?.presentTransparentNavigationBar()
         
@@ -100,5 +86,17 @@ public class PathDetailViewController : UIViewController {
         } else {
             // Fallback on earlier versions
         }
+    }
+    
+    public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        log.debug("pathDetail view will disappear")
+
+    }
+    
+    public override func didReceiveMemoryWarning() {
+        log.debug("pathDetail view did receive mem warning")
+
     }
 }

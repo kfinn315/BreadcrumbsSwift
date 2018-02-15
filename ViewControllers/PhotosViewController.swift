@@ -1,14 +1,33 @@
+import Foundation
 import UIKit
 import Photos
-import Foundation
 import RxSwift
 import RxCocoa
 
 class PhotosViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate {
     @IBOutlet weak var collectionView: UICollectionView!
-    var disposeBag = DisposeBag()
     
-    private var assetThumbnailSize: CGSize?
+    weak var crumbsManager = CrumbsManager.shared
+    var disposeBag = DisposeBag()
+    fileprivate let imageManager = PHCachingImageManager()
+    var fetchResult: PHFetchResult<PHAsset>!
+    var hasPermission = Variable<Bool>(false)
+    var hasPermissionDriver : Driver<Bool>?
+    var collectionViewLayout : UICollectionViewLayout?
+
+    private var thumbnailSize: CGSize = CGSize(width: 50, height: 50)
+    private lazy var imageViewController : ImageViewController? = {
+        return storyboard?.instantiateViewController(withIdentifier: "ImageView") as! ImageViewController?
+    }()
+    
+    private lazy var emptyLabel : UILabel = {
+        let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self.collectionView.bounds.size.width, height: self.view.bounds.size.height))
+        emptyLabel.textAlignment = NSTextAlignment.center
+        emptyLabel.numberOfLines = 0
+        emptyLabel.text          = "Please allow this app to access Photos."
+        emptyLabel.font          = emptyLabel.font.withSize(10)
+        return emptyLabel
+    }()
     
     lazy var albumAlert : UIAlertController = {
         let alert = UIAlertController(title: "Import Photo Album", message: "", preferredStyle: UIAlertControllerStyle.alert)
@@ -21,42 +40,30 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         return alert
     }()
     
-    var crumbsManager = CrumbsManager.shared
-
-    private var assets : [PHAsset]?
-    var hasPermission = Variable<Bool>(false)
-    var hasPermissionDriver : Driver<Bool>?
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        resetCachedAssets()
         self.collectionView?.delegate = self
         self.collectionView?.dataSource = self
-        crumbsManager.currentPathAlbum.asObservable().subscribe(onNext: { [weak self] assetcollection in
-            DispatchQueue.main.async {
-                self?.title = self?.crumbsManager.currentAlbumTitle
-                self?.assets = assetcollection
-                self?.refreshData()
-            }
+        crumbsManager?.currentAlbumDriver.drive(onNext: { [weak self] assetcollection in
+            guard assetcollection != nil
+                else{ return }
+            
+//            self?.title = self?.crumbsManager?.currentAlbumTitle
+            self?.fetchResult = PHAsset.fetchAssets(in: assetcollection!, options: nil)
+            self?.collectionView?.reloadData()
         }).disposed(by: disposeBag)
         
         hasPermissionDriver = hasPermission.asObservable().asDriver(onErrorJustReturn: true)
-        hasPermissionDriver?.drive(onNext: { [weak self] (hasPermission) in
-            guard self != nil else { return }
-            
+        hasPermissionDriver?.drive(onNext: { [unowned self] (hasPermission) in
             if hasPermission {
-                self!.collectionView.backgroundView = nil
-                self!.collectionView.reloadData()
+                self.collectionView.backgroundView = nil
             }
             else {
-                let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self!.collectionView.bounds.size.width, height: self!.view.bounds.size.height))
-                emptyLabel.textAlignment = NSTextAlignment.center
-                emptyLabel.numberOfLines = 0
-                emptyLabel.text          = "Please allow this app to access Photos."
-                emptyLabel.font          = emptyLabel.font.withSize(10)
-                self!.collectionView.backgroundView = emptyLabel
-                self!.collectionView.reloadData()
+                self.collectionView.backgroundView = self.emptyLabel
             }
+            self.collectionView.reloadData()
         }).disposed(by: disposeBag)
     }
     
@@ -64,28 +71,44 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         // Get size of the collectionView cell for thumbnail image
         if let layout = collectionView?.collectionViewLayout as? UICollectionViewFlowLayout {
             let cellSize = layout.itemSize
-            self.assetThumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
+            self.thumbnailSize = CGSize(width: cellSize.width, height: cellSize.height)
         }
         
         let photoAuth = PHPhotoLibrary.authorizationStatus()
         
         if photoAuth != PHAuthorizationStatus.authorized {
-            PHPhotoLibrary.requestAuthorization({ (status) in
+            PHPhotoLibrary.requestAuthorization({ [weak self] (status) in
                 if status == PHAuthorizationStatus.authorized{
-                    self.hasPermission.value = true
+                    self?.hasPermission.value = true
                 } else{
-                    self.hasPermission.value = false
+                    self?.hasPermission.value = false
                 }
             })
         } else {
             hasPermission.value = true
         }
+        
+        updateItemSize()
+        
+        self.parent?.navigationItem.setRightBarButton(UIBarButtonItem.init(barButtonSystemItem: .add, target: self, action: #selector(showAdd)), animated: true)
     }
     
-    func refreshData() {
-        DispatchQueue.main.async { [weak self] in
-            self?.collectionView?.reloadData()
-        }
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        
+        updateItemSize()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateCachedAssets()
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        (self.parent as? PageViewController)?.resetNavigationItem()
+    }
+    
+    @objc func showAdd(){
+        present(albumAlert, animated: true, completion: nil)
     }
     
     override func didReceiveMemoryWarning() {
@@ -103,37 +126,30 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        var count: Int = 1
-        
-        if(self.assets != nil) {
-            count = self.assets!.count + 1
+        //return self.assets?.count ?? 0 + 1
+        if self.fetchResult == nil
+        {
+            return 0
         }
-        
-        return count
+        return self.fetchResult.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let asset = fetchResult.object(at: indexPath.item)
         
-        var cell : UICollectionViewCell?
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath) as? ImageCollectionViewCell
+            else { fatalError("bad cell") }
         
-        if self.assets == nil || indexPath.row == self.assets?.count { //last cell
-            cell = collectionView.dequeueReusableCell(withReuseIdentifier: "addPhoto", for: indexPath as IndexPath) as? AddPhotoCell
-            
-        } else {
-            
-            cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cameraCell", for: indexPath as IndexPath)
-            
-            //Modify the cell
-            if assets?.count ?? 0 > indexPath.item, let asset = self.assets?[indexPath.item], let assetsize = assetThumbnailSize {
-                PHImageManager.default().requestImage(for: asset, targetSize: assetsize, contentMode: .aspectFill, options: nil, resultHandler: {(result, _) in
-                    if result != nil, let ivcell = cell as? ImageCollectionViewCell {
-                        ivcell.imageView.image = result
-                    }
-                })
+        cell.representedAssetIdentifier = asset.localIdentifier
+        
+        imageManager.requestImage(for: asset, targetSize: thumbnailSize, contentMode: .aspectFill, options: nil, resultHandler: { image, _ in
+            // The cell may have been recycled by the time this handler gets called;
+            // set the cell's thumbnail image only if it's still showing the same asset.
+            if cell.representedAssetIdentifier == asset.localIdentifier && image != nil {
+                cell.imageView.image = image
             }
-        }
-        
-        return cell ?? UICollectionViewCell()
+        })
+        return cell
     }
     
     // MARK: - UICollectionViewDelegateFlowLayout methods
@@ -151,37 +167,15 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if self.assets == nil || indexPath.row == self.assets?.count { //last cell
-            present(albumAlert, animated: true, completion: nil)
-        } else {
-            showFull(assets?[indexPath.row])
-        }
-    }    
-    func showFull(_ asset: PHAsset?) {
-        guard asset != nil else {
-            return
-        }
-        if let imageVC = storyboard?.instantiateViewController(withIdentifier: "ImageView") as? ImageViewController {
-            imageVC.asset = asset
-            //photovc.assetCollection = assetCollection
-            self.parent?.navigationController?.pushViewController(imageVC, animated: true)
-        }
+        let asset = fetchResult.object(at: indexPath.item)
+        showFull(asset)
     }
-    public func createAnAlbum() {
-        let crumbsManager = CrumbsManager.shared
-        if let path = crumbsManager.currentPath, let start = path.startdate, let end = path.enddate {
-            PhotoManager.createTimespanAlbum(name: "\(path.title ?? "breadcrumb") - \((start as Date).string)", start: start as Date, end: end as Date, completionHandler: { (collection, error) in
-                if collection != nil {
-                    _ = crumbsManager.updateCurrentAlbum(collection: collection!)
-                    
-                    DispatchQueue.main.async {
-                        //self?.updateCells()
-                    }
-                }
-                if error != nil {
-                    log.error(error!.localizedDescription)
-                }
-            })
+    
+    func showFull(_ asset: PHAsset) {
+        if let imageViewController = imageViewController{
+            imageViewController.asset = asset
+            //photovc.assetCollection = assetCollection
+            self.parent?.navigationController?.pushViewController(imageViewController, animated: true)
         }
     }
     
@@ -191,15 +185,94 @@ class PhotosViewController: UIViewController, UICollectionViewDataSource, UIColl
         }
     }
     
-    //    func removeAlbum(){
-    //        if var vcs = self.navigationController?.viewControllers {
-    //            _ = vcs.popLast()
-    //            if vcs.last as? PathDetailViewController != nil {
-    //                CrumbsManager.shared.currentPath?.albumData = nil
-    //            }
-    //
-    //            self.navigationController?.setViewControllers(vcs, animated: true)
-    //        }
-    //    }
+    fileprivate func updateCachedAssets() {
+        // Update only if the view is visible.
+        guard isViewLoaded && view.window != nil else { return }
+        
+        // The preheat window is twice the height of the visible rect.
+        let visibleRect = CGRect(origin: collectionView!.contentOffset, size: collectionView!.bounds.size)
+        let preheatRect = visibleRect.insetBy(dx: 0, dy: -0.5 * visibleRect.height)
+        
+        // Update only if the visible area is significantly different from the last preheated area.
+        let delta = abs(preheatRect.midY - previousPreheatRect.midY)
+        guard delta > view.bounds.height / 3 else { return }
+        
+        // Compute the assets to start caching and to stop caching.
+        let (addedRects, removedRects) = differencesBetweenRects(previousPreheatRect, preheatRect)
+        let addedAssets = addedRects
+            .flatMap { rect in collectionView!.indexPathsForElements(in: rect) }
+            .map { indexPath in fetchResult.object(at: indexPath.item) }
+        let removedAssets = removedRects
+            .flatMap { rect in collectionView!.indexPathsForElements(in: rect) }
+            .map { indexPath in fetchResult.object(at: indexPath.item) }
+        
+        // Update the assets the PHCachingImageManager is caching.
+        imageManager.startCachingImages(for: addedAssets,
+                                        targetSize: thumbnailSize, contentMode: .aspectFill, options: nil)
+        imageManager.stopCachingImages(for: removedAssets,
+                                       targetSize: thumbnailSize, contentMode: .aspectFill, options: nil)
+        
+        // Store the preheat rect to compare against in the future.
+        previousPreheatRect = preheatRect
+    }
     
+    fileprivate func differencesBetweenRects(_ old: CGRect, _ new: CGRect) -> (added: [CGRect], removed: [CGRect]) {
+        if old.intersects(new) {
+            var added = [CGRect]()
+            if new.maxY > old.maxY {
+                added += [CGRect(x: new.origin.x, y: old.maxY,
+                                 width: new.width, height: new.maxY - old.maxY)]
+            }
+            if old.minY > new.minY {
+                added += [CGRect(x: new.origin.x, y: new.minY,
+                                 width: new.width, height: old.minY - new.minY)]
+            }
+            var removed = [CGRect]()
+            if new.maxY < old.maxY {
+                removed += [CGRect(x: new.origin.x, y: new.maxY,
+                                   width: new.width, height: old.maxY - new.maxY)]
+            }
+            if old.minY < new.minY {
+                removed += [CGRect(x: new.origin.x, y: old.minY,
+                                   width: new.width, height: new.minY - old.minY)]
+            }
+            return (added, removed)
+        } else {
+            return ([new], [old])
+        }
+    }
+    
+    private func updateItemSize() {
+        
+        let viewWidth = view.bounds.size.width
+        
+        let desiredItemWidth: CGFloat = 100
+        let columns: CGFloat = max(floor(viewWidth / desiredItemWidth), 4)
+        let padding: CGFloat = 1
+        let itemWidth = floor((viewWidth - (columns - 1) * padding) / columns)
+        let itemSize = CGSize(width: itemWidth, height: itemWidth)
+        
+        if let layout = collectionViewLayout as? UICollectionViewFlowLayout {
+            layout.itemSize = itemSize
+            layout.minimumInteritemSpacing = padding
+            layout.minimumLineSpacing = padding
+        }
+        
+        // Determine the size of the thumbnails to request from the PHCachingImageManager
+        let scale = UIScreen.main.scale
+        thumbnailSize = CGSize(width: itemSize.width * scale, height: itemSize.height * scale)
+    }
+    fileprivate var previousPreheatRect = CGRect.zero
+    
+    fileprivate func resetCachedAssets() {
+        imageManager.stopCachingImagesForAllAssets()
+        previousPreheatRect = .zero
+    }
+}
+
+private extension UICollectionView {
+    func indexPathsForElements(in rect: CGRect) -> [IndexPath] {
+        let allLayoutAttributes = collectionViewLayout.layoutAttributesForElements(in: rect)!
+        return allLayoutAttributes.map { $0.indexPath }
+    }
 }

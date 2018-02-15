@@ -20,6 +20,15 @@ class NavTableViewController: UITableViewController {
     
     let disposeBag = DisposeBag()
     
+    weak var crumbsManager = CrumbsManager.shared
+    
+    lazy var pager : PageViewController? = {
+        if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager") as? PageViewController {
+            return vc
+        }
+        return nil
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -43,7 +52,7 @@ class NavTableViewController: UITableViewController {
         if(CrumbsManager.shared.hasNewPath) {
             let editVC = EditPathViewController()
             self.navigationController?.pushViewController(editVC, animated: true)
-            CrumbsManager.shared.hasNewPath = false
+            crumbsManager?.hasNewPath = false
         }
     }
     
@@ -97,11 +106,11 @@ class NavTableViewController: UITableViewController {
             return try self.tableView.rx.model(at: indexPath)
             }.subscribe(onNext: { [unowned self] (path) in
                 do {
-                    CrumbsManager.shared.setCurrentPath(path)
+                    self.crumbsManager?.setCurrentPath(path)
                     
-                    if let vc = self.storyboard?.instantiateViewController(withIdentifier: "Pager") {
-                        self.showDetailViewController(vc, sender: self)
-                    }
+                    guard self.pager != nil else{ return }
+
+                    self.showDetailViewController(self.pager!, sender: self)
                 }
             }).disposed(by: disposeBag)
         

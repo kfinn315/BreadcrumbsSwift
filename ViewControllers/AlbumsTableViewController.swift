@@ -28,21 +28,19 @@ public class AlbumsTableViewController : UITableViewController {
         hasPermissionDriver = hasPermission.asObservable().asDriver(onErrorJustReturn: true)
         
         hasPermissionDriver?.drive(onNext: { [weak self] (hasPermission) in
-            guard self != nil else { return }
-            
             if hasPermission {
-                self!.tableView.backgroundView = nil
-                self!.data = PhotoManager.getCollections()
-                self!.tableView.reloadData()
+                self?.tableView.backgroundView = nil
+                self?.data = PhotoManager.getCollections()
+                self?.tableView.reloadData()
             }
             else {
-                let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self!.tableView.bounds.size.width, height: self!.view.bounds.size.height))
+                let emptyLabel = UILabel(frame: CGRect(x:0, y:0, width: self?.tableView.bounds.size.width ?? 0, height: self?.view.bounds.size.height ?? 0))
                 emptyLabel.textAlignment = NSTextAlignment.center
                 emptyLabel.numberOfLines = 0
                 emptyLabel.text          = "Please allow this app to access Photos."
                 emptyLabel.font          = emptyLabel.font.withSize(10)
-                self!.tableView.backgroundView = emptyLabel
-                self!.tableView.reloadData()
+                self?.tableView.backgroundView = emptyLabel
+                self?.tableView.reloadData()
             }
         }).disposed(by: disposeBag)
     }
@@ -56,7 +54,7 @@ public class AlbumsTableViewController : UITableViewController {
         
         if photoAuth != PHAuthorizationStatus.authorized {
             PHPhotoLibrary.requestAuthorization({ (status) in
-                if status == PHAuthorizationStatus.authorized{
+                if status == PHAuthorizationStatus.authorized {
                     self.hasPermission.value = true
                 } else{
                     self.hasPermission.value = false
@@ -78,6 +76,7 @@ public class AlbumsTableViewController : UITableViewController {
     public override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
+    
     public override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "albumCell", for: indexPath)
         
@@ -110,8 +109,11 @@ public class AlbumsTableViewController : UITableViewController {
     
     public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let album = self.data[indexPath.row]
-        _ = CrumbsManager.shared.updateCurrentAlbum(collection: album)
-        
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = CrumbsManager.shared.updateCurrentAlbum(collection: album)
+        }
+
         self.navigationController?.popViewController(animated: true)
     }
     

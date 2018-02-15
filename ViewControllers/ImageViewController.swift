@@ -12,7 +12,7 @@ import Photos
 public class ImageViewController : UIViewController {
     private var assetSize: CGSize!
 
-    public var asset : PHAsset?
+    public weak var asset : PHAsset?
     
     @IBOutlet weak var imageView: UIImageView!
     

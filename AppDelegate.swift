@@ -19,7 +19,7 @@ var cloud : SBPlatformDestination? = nil
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     
-    static var managedObjectContext : NSManagedObjectContext? = {
+    weak static var managedObjectContext : NSManagedObjectContext? = {
         if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
             return appDelegate.managedObjectContext
         }
